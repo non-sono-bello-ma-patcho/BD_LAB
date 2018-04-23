@@ -7,10 +7,10 @@ ON Studenti.CorsoDiLaurea = CorsiDiLaurea.id
 WHERE Laurea < '2009-11-01' AND CorsiDiLaurea.Denominazione='Informatica';
 
 
-
 SELECT corsi.id,cognome,nome,denominazione
 FROM Professori JOIN  Corsi ON Professori.id = Corsi.professore
 ORDER BY corsi.id DESC;
+
 
 SELECT corsi.denominazione , Professori.cognome
 FROM Corsi JOIN Professori  ON Professori.id = Corsi.professore
@@ -37,7 +37,6 @@ FROM Studenti JOIN Professori ON Studenti.relatore= Professori.id
 ORDER BY Studenti.cognome ASC;
 
 SELECT Corsi.denominazione , CorsiDiLaurea.denominazione
--- join tables so that for each course we have the subject included:
 FROM Corsi JOIN CorsiDiLaurea  ON Corsi.CorsoDiLaurea = CorsiDiLaurea.id
 WHERE CorsiDiLaurea.denominazione='Informatica' AND Corsi.attivato
 AND Corsi.denominazione LIKE '__s%';
