@@ -30,7 +30,7 @@ CREATE TABLE Studenti
 		 Iscrizione CHAR(9),
 		 Relatore NUMERIC(5) REFERENCES Professori ON UPDATE CASCADE ON DELETE NO ACTION
 		);
-
+/*
 -- adding mutuada column
 ALTER TABLE Corsi ADD COLUMN MutuaDa VARCHAR(10) REFERENCES Corsi ON UPDATE CASCADE ON DELETE NO ACTION;
 
@@ -38,3 +38,4 @@ ALTER TABLE Corsi ADD COLUMN MutuaDa VARCHAR(10) REFERENCES Corsi ON UPDATE CASC
 ALTER TABLE Professori ALTER COLUMN Stipendio NUMERIC(7,2) DEFAULT 15000;
 
 -- mancano passaggi da c in poi
+*/
