@@ -1,0 +1,121 @@
+﻿set search_path to unicorsi;
+--FUNZIONI DI GRUPPO-------
+
+----esercizio1----
+select max(stipendio),avg(stipendio),min(stipendio)
+from professori;
+
+---esercizio2---
+select max(voto),min(voto),avg(voto)
+from esami join corsi on esami.corso=corsi.id
+	join corsidilaurea on corsi.corsodilaurea=corsidilaurea.id
+where corsidilaurea.denominazione='Informatica';
+
+
+----esercizio3----
+select max(voto),corsidilaurea.denominazione
+from esami join corsi on esami.corso=corsi.id
+	join corsidilaurea on corsi.corsodilaurea=corsidilaurea.id
+group by corsidilaurea.denominazione
+order by max(voto) desc;
+
+
+----esercizio4---
+select nome, cognome/*,corsi.denominazione,attivato,attivazione,*/,count(*)
+from professori 
+join corsi on corsi.professore=professori.id
+join corsidilaurea on corsi.corsodilaurea=corsidilaurea.id
+group by nome,cognome having count(*)>2 --having filtra il risultato di group by ... una specie di where
+order by count(*)  desc;
+
+---esercizio5---
+select corsi.denominazione,count(*)
+from esami
+join corsi on esami.corso=corsi.id
+join corsidilaurea on corsi.corsodilaurea=corsidilaurea.id
+where corsidilaurea.denominazione='Informatica'
+group by corsi.denominazione having count(*)<5
+;/*
+union*/
+select esami.studente,corsi.denominazione,data
+from esami
+full outer join corsi on esami.corso=corsi.id
+join corsidilaurea on corsi.corsodilaurea=corsidilaurea.id
+where corsidilaurea.denominazione='Informatica'
+
+;
+
+--esercizio6---
+select professori.cognome,professori.nome,count(matricola)
+from professori
+join studenti on studenti.relatore=professori.id
+group by professori.cognome,professori.nome 
+order by professori.cognome,professori.nome asc;
+
+
+--esercizio7---
+
+
+select professori.cognome,professori.nome,count(matricola)
+from professori
+left outer join studenti on studenti.relatore=professori.id
+group by professori.cognome,professori.nome
+order by professori.cognome,professori.nome asc;
+
+
+
+----esercizio8----
+
+select matricola ,avg(voto)--corsi.denominazione,esami.data,corsidilaurea.denominazione
+from esami
+join studenti on esami.studente=studenti.matricola
+join corsidilaurea on studenti.corsodilaurea=corsidilaurea.id
+join corsi on esami.corso=corsi.id
+where corsidilaurea.denominazione='Informatica'
+group by matricola having count(extract( month from esami.data))>=2
+order by matricola;
+
+
+----SOTTO INTERROGAZIONI--------
+
+--esercizio1 ----
+
+
+
+select corsidilaurea.denominazione,count(*)
+from corsidilaurea
+join studenti on studenti.corsodilaurea=corsidilaurea.id
+where corsidilaurea.attivazione='2009/2010'
+group by corsidilaurea.denominazione having count(*)>0;/*>(select count(*)
+							from corsidilaurea
+							join studenti on studenti.corsodilaurea=corsidilaurea.id
+							where corsidilaurea.denominazione='Informatica');*/
+
+----esercizio2------
+
+
+select matricola
+from studenti
+join corsidilaurea on studenti.corsodilaurea=corsidilaurea.id as f
+where corsidilaurea.denominazione='Informatica';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
