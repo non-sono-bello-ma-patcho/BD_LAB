@@ -5,19 +5,55 @@ SELECT matricola, nome,cognome
 FROM Studenti JOIN CorsiDiLaurea
 ON Studenti.CorsoDiLaurea = CorsiDiLaurea.id
 WHERE Laurea < '2009-11-01' AND CorsiDiLaurea.Denominazione='Informatica';
-
+-- nessuna tupla;
 
 SELECT corsi.id,cognome,nome,denominazione
 FROM Professori JOIN  Corsi ON Professori.id = Corsi.professore
 ORDER BY corsi.id DESC;
-
+/*
+"Rondinelli"	"Maria"	"Sistemi Esperti"	"se        "
+"Bettini"	"Claudio"	"Reti di Calcolatori 2"	"r2        "
+"Bettini"	"Claudio"	"Reti di calcolatori 1"	"r1        "
+"Valle"	"Giorgio"	"Chimica Organica 1"	"org1      "
+"Valle"	"Giorgio"	"Meccanica Razionale"	"mring     "
+"Bettini"	"Claudio"	"Meccanica Razionale"	"mraz      "
+"Galvagna"	"Gabriele"	"Metodi"	"met       "
+"Apolloni"	"Bruno"	"Istituzioni Matematiche"	"matGen    "
+"Alberti"	"Maria"	"Istituzioni Matematiche"	"mate      "
+"Aguzzoli"	"Davide"	"Istituzioni Matematiche"	"mat       "
+"Alberti"	"Maria"	"Linguaggi di Programmazione"	"ldp       "
+"Levrero"	"Michele"	"Informatica Teorica "	"it        "
+"De Falco"	"Stefano"	"Informatica Generale"	"infogenM  "
+"De Falco"	"Stefano"	"Informatica Generale"	"infogen   "
+"Campadelli"	"Laura"	"Informatica"	"info      "
+"Rondinelli"	"Maria"	"Interfacce Grafiche"	"ig        "
+"Rondinelli"	"Maria"	"Grafica"	"graf      "
+"Alberti"	"Maria"	"Fisica 2 "	"fis2      "
+"Lamberti"	"Stefano"	"Fisica 1"	"fis1si    "
+"Aguzzoli"	"Davide"	"Fisica 1"	"fis1      "
+"Ferrari"	"Mauro"	"Epistemologia"	"ep        "
+"Cerri"	"Stefano Alberto"	"Elaborazione delle immagini 1"	"elimm1    "
+"Rondinelli"	"Maria"	"elettrochimica 2"	"ele2      "
+"Levrero"	"Michele"	"elettrochimica 1"	"ele1      "
+"Aguzzoli"	"Davide"	"Basi Di Dati 2"	"bdd2      "
+"Bellettini"	"Carlo"	"Basi Di Dati 1"	"bdd1n     "
+"Aguzzoli"	"Davide"	"Analisi 1"	"an1mate   "
+"Aguzzoli"	"Davide"	"Analisi 1"	"an1info   "
+"Bellettini"	"Carlo"	"Algoritmi e strutture dati 2"	"algo2     "
+"Bellettini"	"Carlo"	"Algoritmi e strutture dati 1"	"algo1     "
+"Cangini"	"Palmiro"	"Intelligenza Artificiale 2"	"ai2       "
+"Rondinelli"	"Gianluigi"	"Intelligenza Artificiale 1"	"ai1in     "
+"Rosa"	"Aldo"	"Intelligenza Artificiale 1"	"ai1       "
+*/
 
 SELECT corsi.denominazione , Professori.cognome
 FROM Corsi JOIN Professori  ON Professori.id = Corsi.professore
 	JOIN CorsiDiLaurea ON Corsi.CorsoDiLaurea =CorsiDiLaurea.id
 WHERE CorsiDiLaurea.attivazione < ' 2009-11-01'
 ORDER BY Professori.cognome ASC;
+/*
 
+*/
 -- We are going to join orizzontally many tables, so we must specify from which table to pick attributes:
 SELECT corsi.denominazione, professori.cognome
 -- pairs professori and corsi based on professor ID, the values of id for both professori and corsi has the same value for each row:
