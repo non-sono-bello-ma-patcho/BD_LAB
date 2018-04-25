@@ -4,7 +4,23 @@ New year, new *non sono bello ma patcho*, new repository! More info will be adde
 
 ## Projects List:
 ### [Lab1](lab1/)
-  A simple drill about schemas creation;
+  A simple drill about schemas creation, in particular:
+  Commands:
+  ```sql
+      CREATE SCHEMA <schema name>
+      CREATE TABLE <table name>
+  ```
+  Keywords:
+  ```sql
+      <attribute> PRIMARY KEY
+      <attribute> UNIQUE
+      <attribute> NOT NULL
+  ```
+  Clauses:
+  ```sql
+  <attribute> REFERENCES <attribute> [ { ON DELETE | ON UPDATE }{ NO ACTION | CASCADE | SET NULL | SET DEFAULT } ]
+  ```
+
 ### [lab2](lab2/)
   A short drill about commands:
   ```sql
