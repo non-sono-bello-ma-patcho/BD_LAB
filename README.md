@@ -6,8 +6,7 @@ New year, new *non sono bello ma patcho*, new repository! More info will be adde
 ### [Lab1](lab1/)
   A simple drill about schemas creation;
 ### [lab2](lab2/)
-  A short drill about:
-  Commands:
+  A short drill about commands:
   ```sql
       SELECT <column>
       FROM <table>
