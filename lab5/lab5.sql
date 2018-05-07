@@ -44,16 +44,6 @@ SELECT matricola
 
 
 --3
-
--- insieme delle matricole
-select matricola
-from studenti S
-JOIN corsidilaurea ON S.corsodilaurea=corsidilaurea.id
-group by matricola /*having AVG (select esami.voto
-	from esami
-	join studenti on S.matricola = esami.studente)*/;
-
--- insieme dei voti di una matricola
 select matricola
 from( -- insieme degli studenti di informatica + media voti:
 	select matricola, AVG(esami.voto)as media
@@ -64,7 +54,7 @@ from( -- insieme degli studenti di informatica + media voti:
 		on corsidilaurea.id = S.corsodilaurea
 	where corsidilaurea.denominazione = 'Informatica'
 	group by matricola
-)mm
+)mm -- there must be a way to avoid rewrite the entire subqery
 where mm.media = (select max(media) from(
 		select matricola, AVG(esami.voto)as media
 		from studenti S
@@ -74,6 +64,28 @@ where mm.media = (select max(media) from(
 			on corsidilaurea.id = S.corsodilaurea
 		where corsidilaurea.denominazione = 'Informatica'
 		group by matricola
+		)asp
+	)
+;
 
-) asp
+--4
+-- insieme delle matricole degli studenti di Informatica che hanno sostenuto BD
+SELECT distinct matricola
+	FROM esami
+	JOIN studenti  S on esami.studente=S.matricola
+	JOIN corsi on esami.corso=corsi.id
+	JOIN corsidilaurea ON S.corsodilaurea=corsidilaurea.id
+	WHERE corsi.denominazione='Basi Di Dati 1'
+	AND corsidilaurea.denominazione='Informatica'
+	and esami.voto >
+	(
+		select avg(voto) as media
+		from esami
+		join studenti S on esami.studente = S.matricola
+		join corsi on esami.corso=corsi.id
+		join corsidilaurea on S.corsodilaurea = corsidilaurea.id
+		WHERE corsi.denominazione='Basi Di Dati 1'
+		AND corsidilaurea.denominazione='Informatica'
+		order by media asc
+	)
 ;
