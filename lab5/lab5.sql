@@ -89,3 +89,18 @@ SELECT distinct matricola
 		order by media asc
 	)
 ;
+
+-- 5
+-- insieme degli esami dei corsi di informatica con almeno un 27 registrato
+select en.denominazione, minv, avgv, maxv
+from(
+	select corsi.denominazione, min(voto) as minv, avg(voto) as avgv, max(voto) as maxv, count(*) as esnum
+	from esami
+		join corsi on esami.corso = corsi.id
+		join corsidilaurea on corsi.corsodilaurea = corsidilaurea.id
+		where corsidilaurea.denominazione = 'Informatica'
+		and esami.voto > 27
+		group by corsi.denominazione
+)en
+where en.esnum >2
+;
