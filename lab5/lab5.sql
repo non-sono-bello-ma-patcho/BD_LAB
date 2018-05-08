@@ -104,3 +104,22 @@ from(
 )en
 where en.esnum >2
 ;
+-- 6
+select distinct nome, cognome, professori.id
+from (
+	select corsi.id as id, avg(voto) as media
+	from esami
+		join corsi on esami.corso = corsi.id
+		group by corsi.id
+		)first
+		natural join corsi
+		join professori on corsi.professore = professori.id
+		where media >= ALL
+		(															
+			select avg(voto) as media2
+			from esami
+				join corsi on Esami.corso = Corsi.id
+			group by corsi.id																										
+		)
+;
+
