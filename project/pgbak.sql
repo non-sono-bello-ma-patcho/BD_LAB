@@ -1326,10 +1326,31 @@ ALTER TABLE ONLY bdproject.users
 
 
 --
--- Name: teamcandidatures check_admin_confirm; Type: TRIGGER; Schema: bdproject; Owner: postgres
+-- Name: teamcandidatures check_team_not_full; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
-CREATE TRIGGER check_admin_confirm BEFORE UPDATE OF admin ON bdproject.teamcandidatures FOR EACH STATEMENT EXECUTE PROCEDURE bdproject."PROC_check_admin_confirmation_team_candidatures"();
+CREATE CONSTRAINT TRIGGER check_team_not_full AFTER UPDATE OF admin ON bdproject.teamcandidatures NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW WHEN ((new.admin IS NOT NULL)) EXECUTE PROCEDURE bdproject."PROC_check_admin_confirmation_team_candidatures"();
+
+
+--
+-- Name: TRIGGER check_team_not_full ON teamcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
+--
+
+COMMENT ON TRIGGER check_team_not_full ON bdproject.teamcandidatures IS 'Controlla se c''è posto nel team per confermare l''utente.';
+
+
+--
+-- Name: matchcandidatures check_team_validity; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE CONSTRAINT TRIGGER check_team_validity AFTER UPDATE OF confirmed ON bdproject.matchcandidatures NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW WHEN ((new.confirmed IS NOT NULL)) EXECUTE PROCEDURE bdproject."PROC_match_candidature_confirmation"();
+
+
+--
+-- Name: TRIGGER check_team_validity ON matchcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
+--
+
+COMMENT ON TRIGGER check_team_validity ON bdproject.matchcandidatures IS 'La  candidature  della  squadra  viene  confermata  solo  se  il  numero  minimo  di  iscritti  alla  squadra  è  stato  raggiunto  e  non  si  è  superato  il  numero  massimo  di  giocatori  per  quella  categoria. ';
 
 
 --
