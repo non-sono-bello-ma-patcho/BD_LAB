@@ -1333,13 +1333,6 @@ CREATE TRIGGER check_admin_confirm BEFORE UPDATE OF admin ON bdproject.teamcandi
 
 
 --
--- Name: matchcandidatures check_team_confirm; Type: TRIGGER; Schema: bdproject; Owner: postgres
---
-
-CREATE TRIGGER check_team_confirm BEFORE INSERT ON bdproject.matchcandidatures FOR EACH STATEMENT EXECUTE PROCEDURE bdproject."PROC_match_candidature_confirmation"();
-
-
---
 -- Name: evaluations evaluations_evaluated_fkey; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
 --
 
