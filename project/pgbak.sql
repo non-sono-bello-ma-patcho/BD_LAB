@@ -37,13 +37,13 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: bdproject; Type: SCHEMA; Schema: -; Owner: postgres
+-- Name: bdproject; Type: SCHEMA; Schema: -; Owner: andreo
 --
 
 CREATE SCHEMA bdproject;
 
 
-ALTER SCHEMA bdproject OWNER TO postgres;
+ALTER SCHEMA bdproject OWNER TO andreo;
 
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
@@ -193,6 +193,36 @@ $$;
 
 
 ALTER FUNCTION bdproject."PROC_match_candidature_confirmation"() OWNER TO postgres;
+
+--
+-- Name: count_match_played_by_category(character varying, bdproject.sport); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.count_match_played_by_category(_username character varying, _categoria bdproject.sport) RETURNS numeric
+    LANGUAGE plpgsql
+    AS $$
+begin
+	select count(*)
+	from matches
+	left join matchcandidatures on matches.id=matchcandidatures.match
+	left join teamscandidatures on matchcandidatures.team=teamcandidatures.team
+	where 
+	matches.mstate='closed' 
+	and matches.category=_categoria 
+	and matchcandidatures.confirmed is not null
+	and teamcandidatures.applicant=_username;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.count_match_played_by_category(_username character varying, _categoria bdproject.sport) OWNER TO strafo;
+
+--
+-- Name: FUNCTION count_match_played_by_category(_username character varying, _categoria bdproject.sport); Type: COMMENT; Schema: bdproject; Owner: strafo
+--
+
+COMMENT ON FUNCTION bdproject.count_match_played_by_category(_username character varying, _categoria bdproject.sport) IS 'funzione  che  restituisce  il  numero  delle partite  a  cui  un  singolo  utente  ha  partecipato  in  una  specifica  categoria.';
+
 
 --
 -- Name: count_player(character varying); Type: FUNCTION; Schema: bdproject; Owner: postgres
@@ -655,7 +685,8 @@ CREATE TABLE bdproject.outcomes (
     goleadorteam2 text,
     winteam1 integer,
     winteam2 integer,
-    admin character varying(64)
+    admin character varying(64) NOT NULL,
+    phonenumber character varying(10)
 );
 
 
@@ -1088,7 +1119,7 @@ SELECT pg_catalog.setval('bdproject.matches_id_seq', 1, false);
 -- Data for Name: outcomes; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.outcomes (match, otype, scoreteam1, scoreteam2, goleadorteam1, goleadorteam2, winteam1, winteam2, admin) FROM stdin;
+COPY bdproject.outcomes (match, otype, scoreteam1, scoreteam2, goleadorteam1, goleadorteam2, winteam1, winteam2, admin, phonenumber) FROM stdin;
 \.
 
 
@@ -1323,6 +1354,20 @@ ALTER TABLE ONLY bdproject.users
 
 ALTER TABLE ONLY bdproject.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (username);
+
+
+--
+-- Name: outcomes check_insert_update_result; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE CONSTRAINT TRIGGER check_insert_update_result AFTER INSERT OR UPDATE ON bdproject.outcomes NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE bdproject."PROC_check_insert_match_result"();
+
+
+--
+-- Name: TRIGGER check_insert_update_result ON outcomes; Type: COMMENT; Schema: bdproject; Owner: postgres
+--
+
+COMMENT ON TRIGGER check_insert_update_result ON bdproject.outcomes IS 'Controlla che l''update o l''inserimento di un risultato venga effettuato dall''admin e che al momento dell''inserimento/update la partita sia chiusa.';
 
 
 --
@@ -1562,7 +1607,7 @@ ALTER TABLE ONLY bdproject.users
 
 
 --
--- Name: SCHEMA bdproject; Type: ACL; Schema: -; Owner: postgres
+-- Name: SCHEMA bdproject; Type: ACL; Schema: -; Owner: andreo
 --
 
 GRANT ALL ON SCHEMA bdproject TO strafo;
