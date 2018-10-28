@@ -138,10 +138,10 @@ COMMENT ON FUNCTION bdproject."MOD_confirm_team_for_match"("teamName" character 
 
 
 --
--- Name: check_admin_confirmation_team_candidatures(); Type: FUNCTION; Schema: bdproject; Owner: postgres
+-- Name: PROC_check_admin_confirmation_team_candidatures(); Type: FUNCTION; Schema: bdproject; Owner: postgres
 --
 
-CREATE FUNCTION bdproject.check_admin_confirmation_team_candidatures() RETURNS trigger
+CREATE FUNCTION bdproject."PROC_check_admin_confirmation_team_candidatures"() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 begin
@@ -153,13 +153,13 @@ end;
 $$;
 
 
-ALTER FUNCTION bdproject.check_admin_confirmation_team_candidatures() OWNER TO postgres;
+ALTER FUNCTION bdproject."PROC_check_admin_confirmation_team_candidatures"() OWNER TO postgres;
 
 --
--- Name: check_insert_match_result(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+-- Name: PROC_check_insert_match_result(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.check_insert_match_result() RETURNS trigger
+CREATE FUNCTION bdproject."PROC_check_insert_match_result"() RETURNS trigger
     LANGUAGE plpgsql
     AS $$begin
 	if(not sameadminmatch(new.match,new.admin)) then
@@ -175,7 +175,24 @@ end;
 $$;
 
 
-ALTER FUNCTION bdproject.check_insert_match_result() OWNER TO strafo;
+ALTER FUNCTION bdproject."PROC_check_insert_match_result"() OWNER TO strafo;
+
+--
+-- Name: PROC_match_candidature_confirmation(); Type: FUNCTION; Schema: bdproject; Owner: postgres
+--
+
+CREATE FUNCTION bdproject."PROC_match_candidature_confirmation"() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$begin
+	if (not valid_team(new.team)) then
+	raise exception 'Impossibile confermare la candidatura per il match %, la squadra % non ha raggiunto il minimo dei giocatori o ha superato il massimo consentito.', old.match, old.team;
+	end if;
+	return new;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject."PROC_match_candidature_confirmation"() OWNER TO postgres;
 
 --
 -- Name: count_player(character varying); Type: FUNCTION; Schema: bdproject; Owner: postgres
@@ -228,23 +245,6 @@ ALTER FUNCTION bdproject.is_match_closed(matchno bigint) OWNER TO strafo;
 
 COMMENT ON FUNCTION bdproject.is_match_closed(matchno bigint) IS 'ritorna true se il match è chiuso, false altrimenti';
 
-
---
--- Name: match_candidature_confirmation(); Type: FUNCTION; Schema: bdproject; Owner: postgres
---
-
-CREATE FUNCTION bdproject.match_candidature_confirmation() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$begin
-	if (not valid_team(new.team)) then
-	raise exception 'Impossibile confermare la candidatura per il match %, la squadra % non ha raggiunto il minimo dei giocatori o ha superato il massimo consentito.', old.match, old.team;
-	end if;
-	return new;
-end;
-$$;
-
-
-ALTER FUNCTION bdproject.match_candidature_confirmation() OWNER TO postgres;
 
 --
 -- Name: match_full(bigint); Type: FUNCTION; Schema: bdproject; Owner: postgres
@@ -1329,14 +1329,14 @@ ALTER TABLE ONLY bdproject.users
 -- Name: teamcandidatures check_admin_confirm; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
-CREATE TRIGGER check_admin_confirm BEFORE UPDATE OF admin ON bdproject.teamcandidatures FOR EACH STATEMENT EXECUTE PROCEDURE bdproject.check_admin_confirmation_team_candidatures();
+CREATE TRIGGER check_admin_confirm BEFORE UPDATE OF admin ON bdproject.teamcandidatures FOR EACH STATEMENT EXECUTE PROCEDURE bdproject."PROC_check_admin_confirmation_team_candidatures"();
 
 
 --
 -- Name: matchcandidatures check_team_confirm; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
-CREATE TRIGGER check_team_confirm BEFORE INSERT ON bdproject.matchcandidatures FOR EACH STATEMENT EXECUTE PROCEDURE bdproject.match_candidature_confirmation();
+CREATE TRIGGER check_team_confirm BEFORE INSERT ON bdproject.matchcandidatures FOR EACH STATEMENT EXECUTE PROCEDURE bdproject."PROC_match_candidature_confirmation"();
 
 
 --
