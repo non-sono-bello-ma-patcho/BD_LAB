@@ -4,8 +4,6 @@
 
 -- Dumped from database version 9.6.10
 -- Dumped by pg_dump version 9.6.10
--- Testing new key
-
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -21,7 +19,7 @@ SET row_security = off;
 -- Name: bdproject; Type: DATABASE; Schema: -; Owner: postgres
 --
 
-CREATE DATABASE bdproject WITH TEMPLATE = template0 ENCODING = 'UTF8' LC_COLLATE = 'it_IT.UTF-8' LC_CTYPE = 'it_IT.UTF-8';
+CREATE DATABASE bdproject WITH TEMPLATE = template0 ENCODING = 'UTF8' LC_COLLATE = 'en_GB.UTF-8' LC_CTYPE = 'en_GB.UTF-8';
 
 
 ALTER DATABASE bdproject OWNER TO postgres;
