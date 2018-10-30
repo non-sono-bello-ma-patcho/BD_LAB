@@ -447,21 +447,6 @@ COMMENT ON FUNCTION bdproject.team_min(teamname character varying) IS 'verifica 
 
 
 --
--- Name: testfunction(); Type: FUNCTION; Schema: bdproject; Owner: postgres
---
-
-CREATE FUNCTION bdproject.testfunction() RETURNS boolean
-    LANGUAGE plpgsql
-    AS $$
-begin
-	return true;
-end
-$$;
-
-
-ALTER FUNCTION bdproject.testfunction() OWNER TO postgres;
-
---
 -- Name: valid_team(character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
