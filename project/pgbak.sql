@@ -512,7 +512,8 @@ CREATE TABLE bdproject.categories (
     name bdproject.sport NOT NULL,
     regulation text,
     min numeric,
-    max numeric
+    max numeric,
+    photo bigint
 );
 
 
@@ -1051,7 +1052,7 @@ COPY bdproject.buildings (name, address, phonenumber, email, longitude, latitude
 -- Data for Name: categories; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.categories (name, regulation, min, max) FROM stdin;
+COPY bdproject.categories (name, regulation, min, max, photo) FROM stdin;
 \.
 
 
@@ -1500,6 +1501,14 @@ ALTER TABLE ONLY bdproject.outcomes
 
 ALTER TABLE ONLY bdproject.outcomes
     ADD CONSTRAINT outcomes_match_fkey FOREIGN KEY (match) REFERENCES bdproject.matches(id);
+
+
+--
+-- Name: categories photo; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
+--
+
+ALTER TABLE ONLY bdproject.categories
+    ADD CONSTRAINT photo FOREIGN KEY (photo) REFERENCES bdproject.photos(id);
 
 
 --
