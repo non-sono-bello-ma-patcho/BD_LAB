@@ -283,6 +283,41 @@ $$;
 ALTER FUNCTION bdproject.proc_trigger_matchcandidatures_update() OWNER TO strafo;
 
 --
+-- Name: proc_trigger_outcomes_insert_update(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.proc_trigger_outcomes_insert_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+declare
+	datediff integer;
+begin
+	--esiste la partita in questione? sì perchè match è chiave primaria sulla tabella match--
+
+	--l'admin che la conferma è quello giusto?--
+	if(not sameadminmatch(new.match,new.admin)) then
+		raise exception
+		'Impossibile inserire esito partita(Permesso negato).';
+	end if;
+	--il match è ancora aperto--
+	if(not is_match_closed(new.match))then
+		raise exception
+		'Impossibile inserire esito partita(partita ancora aperta).';
+	end if;
+	--la data di inserimeto è congruente con quella del match?--
+	select datediff(day,(select organizedon from matches),new.insertedon) into datediff;
+	if(datediff<0)then
+		raise exception
+		'Impossibile inserire esito partita(data inserimento precedente all data della partita).';
+	end if;
+	return new;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.proc_trigger_outcomes_insert_update() OWNER TO strafo;
+
+--
 -- Name: proc_trigger_teamcandidatures_insert(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
@@ -656,7 +691,7 @@ CREATE TABLE bdproject.matches (
     tournament character varying(64),
     mstate bdproject.state DEFAULT 'open'::bdproject.state,
     admin character varying(64),
-    category bdproject.sport
+    category bdproject.sport NOT NULL
 );
 
 
@@ -909,7 +944,6 @@ CREATE TABLE bdproject.teams (
     category character varying(64),
     description text,
     notes text,
-    tstate bdproject.state DEFAULT 'open'::bdproject.state,
     admin character varying(64)
 );
 
@@ -922,8 +956,8 @@ ALTER TABLE bdproject.teams OWNER TO postgres;
 
 CREATE TABLE bdproject.tournaments (
     name character varying(64) NOT NULL,
-    ttype bdproject.girone DEFAULT 'italiana'::bdproject.girone,
-    manager character varying(64)
+    ttype bdproject.girone DEFAULT 'italiana'::bdproject.girone NOT NULL,
+    manager character varying(64) NOT NULL
 );
 
 
@@ -1221,7 +1255,7 @@ COPY bdproject.teamcandidatures (team, applicant, admin, role) FROM stdin;
 -- Data for Name: teams; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.teams (name, coloremaglia, category, description, notes, tstate, admin) FROM stdin;
+COPY bdproject.teams (name, coloremaglia, category, description, notes, admin) FROM stdin;
 \.
 
 
@@ -1394,6 +1428,21 @@ CREATE TRIGGER trigger_matchescandidatures_update AFTER UPDATE ON bdproject.matc
 --
 
 COMMENT ON TRIGGER trigger_matchescandidatures_update ON bdproject.matchcandidatures IS 'La  candidature  della  squadra  viene  confermata  solo  se  il  numero  minimo  di  iscritti  alla  squadra  è  stato  raggiunto  e  non  si  è  superato  il  numero  massimo  di  giocatori  per  quella  categoria.Inoltre la conferma avviene solo se ci sono ancora slot squadre disponibili per la partita. Se si è raggiunto il numero massimo la partita viene chiusa';
+
+
+--
+-- Name: outcomes trigger_outcomes_insert_update; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_outcomes_insert_update AFTER INSERT OR UPDATE ON bdproject.outcomes FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_outcomes_insert_update();
+
+
+--
+-- Name: TRIGGER trigger_outcomes_insert_update ON outcomes; Type: COMMENT; Schema: bdproject; Owner: postgres
+--
+
+COMMENT ON TRIGGER trigger_outcomes_insert_update ON bdproject.outcomes IS 'Controlla che l''update o l''inserimento di un risultato venga effettuato dall''
+ ''admin e che al momento dell''inserimento/update la partita sia chiusa.';
 
 
 --
