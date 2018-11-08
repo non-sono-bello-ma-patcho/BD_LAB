@@ -276,20 +276,13 @@ begin
  if not match_full(new.match) then
     return new;
  else
-    	raise exception 'Impossibile confermare la candidatura della squadra % per il match %.', new.team,new.match;
+    	raise exception 'Impossibile confermare la candidatura della squadra % per il match % la partita è già piena.', new.team,new.match;
  end if;
 end;
 $$;
 
 
 ALTER FUNCTION bdproject.proc_confirm_team_for_match() OWNER TO strafo;
-
---
--- Name: FUNCTION proc_confirm_team_for_match(); Type: COMMENT; Schema: bdproject; Owner: strafo
---
-
-COMMENT ON FUNCTION bdproject.proc_confirm_team_for_match() IS 'procedura che viene attivata quando si cerca di confermare una squadra che si candida per una partita';
-
 
 --
 -- Name: proc_match_candidature_confirmation(); Type: FUNCTION; Schema: bdproject; Owner: postgres
