@@ -238,6 +238,46 @@ COMMENT ON FUNCTION bdproject.match_full(matchno bigint) IS 'Restituisce vero es
 
 
 --
+-- Name: proc_trigger_evaluation_insert(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.proc_trigger_evaluation_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+declare
+  partiteincomune integer;
+begin
+      select count(*) into partiteincomune
+      from
+      (
+          select outcomes.match, teamcandidatures.applicant
+					from outcomes
+					inner join matchcandidatures on outcomes.match=matchcandidatures.match
+          inner join teamcandidatures on teamcandidatures.team=matchcandidatures.team
+          where teamcandidatures.admin is not NULL and applicant=new.evaluated
+      ) as aux1
+      inner join
+      (
+          select outcomes.match, teamcandidatures.applicant
+          from outcomes
+          inner join matchcandidatures on outcomes.match = matchcandidatures.match
+          inner join teamcandidatures on teamcandidatures.team = matchcandidatures.team
+          where teamcandidatures.admin is not NULL and applicant = new.evaluator
+
+
+      ) as aux2 on aux1.match=aux2.match;
+
+      if (partiteincomune=0) then
+      raise exception 'Impossibile inserire recension.Nessuna partita in comune.';
+      end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.proc_trigger_evaluation_insert() OWNER TO strafo;
+
+--
 -- Name: proc_trigger_matchcandidatures_insert(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
@@ -346,6 +386,44 @@ $$;
 
 
 ALTER FUNCTION bdproject.proc_trigger_outcomes_insert_update() OWNER TO strafo;
+
+--
+-- Name: proc_trigger_refereecandidatures_insert(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.proc_trigger_refereecandidatures_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+begin
+  if(new.confirmed is not null) then
+    raise exception 'Impossibile inserire e confermare l''utente allo stesso tempo';
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.proc_trigger_refereecandidatures_insert() OWNER TO strafo;
+
+--
+-- Name: proc_trigger_refereecandidatures_update(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.proc_trigger_refereecandidatures_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+begin
+  if(new.confirmed is not NULL) then
+    if(referee_assigned(new.match)) then
+      raise exception 'Arbitro già assegnato per la partita %',new.match;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.proc_trigger_refereecandidatures_update() OWNER TO strafo;
 
 --
 -- Name: proc_trigger_teamcandidatures_insert(); Type: FUNCTION; Schema: bdproject; Owner: strafo
@@ -606,9 +684,9 @@ COMMENT ON TABLE bdproject.categories IS 'categorie di sport';
 --
 
 CREATE TABLE bdproject.evaluations (
-    evaluated character varying(64),
-    evaluator character varying(64),
-    evaluatedon date,
+    evaluated character varying(64) NOT NULL,
+    evaluator character varying(64) NOT NULL,
+    evaluatedon date DEFAULT ('now'::text)::date,
     match bigint NOT NULL,
     score integer,
     CONSTRAINT not_self_eval CHECK (((evaluated)::text <> (evaluator)::text))
@@ -849,12 +927,12 @@ ALTER SEQUENCE bdproject.photos_photo_seq OWNED BY bdproject.photos.photo;
 
 CREATE TABLE bdproject.posts (
     id bigint NOT NULL,
-    postedon date NOT NULL,
-    photo bigint NOT NULL,
-    description text,
-    category character varying(64),
+    postedon date DEFAULT ('now'::text)::date NOT NULL,
+    photo bigint,
+    description text NOT NULL,
+    category bdproject.sport NOT NULL,
     studycourse character varying(64),
-    postedby character varying(64)
+    postedby character varying(64) NOT NULL
 );
 
 
@@ -1038,13 +1116,6 @@ ALTER SEQUENCE bdproject.users_photo_seq OWNED BY bdproject.users.photo;
 
 
 --
--- Name: evaluations match; Type: DEFAULT; Schema: bdproject; Owner: postgres
---
-
-ALTER TABLE ONLY bdproject.evaluations ALTER COLUMN match SET DEFAULT nextval('bdproject.evaluations_match_seq'::regclass);
-
-
---
 -- Name: fora photo; Type: DEFAULT; Schema: bdproject; Owner: postgres
 --
 
@@ -1084,13 +1155,6 @@ ALTER TABLE ONLY bdproject.photos ALTER COLUMN photo SET DEFAULT nextval('bdproj
 --
 
 ALTER TABLE ONLY bdproject.posts ALTER COLUMN id SET DEFAULT nextval('bdproject.posts_id_seq'::regclass);
-
-
---
--- Name: posts photo; Type: DEFAULT; Schema: bdproject; Owner: postgres
---
-
-ALTER TABLE ONLY bdproject.posts ALTER COLUMN photo SET DEFAULT nextval('bdproject.posts_photo_seq'::regclass);
 
 
 --
@@ -1425,6 +1489,20 @@ ALTER TABLE ONLY bdproject.users
 
 
 --
+-- Name: evaluations trigger_evaluations_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_evaluations_insert AFTER INSERT ON bdproject.evaluations FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_evaluation_insert();
+
+
+--
+-- Name: TRIGGER trigger_evaluations_insert ON evaluations; Type: COMMENT; Schema: bdproject; Owner: postgres
+--
+
+COMMENT ON TRIGGER trigger_evaluations_insert ON bdproject.evaluations IS 'Controlla che l''inserimento della recensione avvnega con almeno un match giocato in comune.';
+
+
+--
 -- Name: matchcandidatures trigger_matchcandidatures_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
@@ -1479,6 +1557,34 @@ CREATE TRIGGER trigger_outcomes_insert_update AFTER INSERT OR UPDATE ON bdprojec
 
 COMMENT ON TRIGGER trigger_outcomes_insert_update ON bdproject.outcomes IS 'Controlla che l''update o l''inserimento di un risultato venga effettuato dall''
  ''admin e che al momento dell''inserimento/update la partita sia chiusa.';
+
+
+--
+-- Name: refereecandidatures trigger_refereecandidatures_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_refereecandidatures_insert AFTER INSERT ON bdproject.refereecandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_refereecandidatures_insert();
+
+
+--
+-- Name: TRIGGER trigger_refereecandidatures_insert ON refereecandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
+--
+
+COMMENT ON TRIGGER trigger_refereecandidatures_insert ON bdproject.refereecandidatures IS 'Controlla che l''inserimento non assegni autonomamente l''arbitro';
+
+
+--
+-- Name: refereecandidatures trigger_refereecandidatures_update; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_refereecandidatures_update AFTER UPDATE ON bdproject.refereecandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_refereecandidatures_update();
+
+
+--
+-- Name: TRIGGER trigger_refereecandidatures_update ON refereecandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
+--
+
+COMMENT ON TRIGGER trigger_refereecandidatures_update ON bdproject.refereecandidatures IS 'Controlla che non sia assegnato già un arbitro alla partita';
 
 
 --
@@ -1612,6 +1718,14 @@ ALTER TABLE ONLY bdproject.outcomes
 
 ALTER TABLE ONLY bdproject.categories
     ADD CONSTRAINT photo FOREIGN KEY (photo) REFERENCES bdproject.photos(id);
+
+
+--
+-- Name: posts posts_category_fkey; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
+--
+
+ALTER TABLE ONLY bdproject.posts
+    ADD CONSTRAINT posts_category_fkey FOREIGN KEY (category) REFERENCES bdproject.categories(name) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
