@@ -226,10 +226,10 @@ COMMENT ON FUNCTION bdproject.match_full(matchno bigint) IS 'Restituisce vero es
 
 
 --
--- Name: proc_check_admin_confirmation_team_candidatures(); Type: FUNCTION; Schema: bdproject; Owner: postgres
+-- Name: proc_check__team_candidature_confirmation(); Type: FUNCTION; Schema: bdproject; Owner: postgres
 --
 
-CREATE FUNCTION bdproject.proc_check_admin_confirmation_team_candidatures() RETURNS trigger
+CREATE FUNCTION bdproject.proc_check__team_candidature_confirmation() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 begin
@@ -241,7 +241,7 @@ end;
 $$;
 
 
-ALTER FUNCTION bdproject.proc_check_admin_confirmation_team_candidatures() OWNER TO postgres;
+ALTER FUNCTION bdproject.proc_check__team_candidature_confirmation() OWNER TO postgres;
 
 --
 -- Name: proc_check_insert_match_result(); Type: FUNCTION; Schema: bdproject; Owner: strafo
@@ -1381,7 +1381,7 @@ CREATE TRIGGER check_team_confirmation AFTER UPDATE ON bdproject.matchcandidatur
 -- Name: teamcandidatures check_team_not_full; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
-CREATE CONSTRAINT TRIGGER check_team_not_full AFTER UPDATE OF admin ON bdproject.teamcandidatures NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW WHEN ((new.admin IS NOT NULL)) EXECUTE PROCEDURE bdproject.proc_check_admin_confirmation_team_candidatures();
+CREATE CONSTRAINT TRIGGER check_team_not_full AFTER UPDATE OF admin ON bdproject.teamcandidatures NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW WHEN ((new.admin IS NOT NULL)) EXECUTE PROCEDURE bdproject.proc_check__team_candidature_confirmation();
 
 
 --
