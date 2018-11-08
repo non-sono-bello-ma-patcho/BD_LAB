@@ -266,32 +266,29 @@ $$;
 ALTER FUNCTION bdproject.proc_check_insert_match_result() OWNER TO strafo;
 
 --
--- Name: proc_confirm_team_for_match(character varying, bigint, character varying); Type: FUNCTION; Schema: bdproject; Owner: postgres
+-- Name: proc_confirm_team_for_match(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.proc_confirm_team_for_match(teamname character varying, matchno bigint, confirmer character varying) RETURNS pg_trigger
+CREATE FUNCTION bdproject.proc_confirm_team_for_match() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 begin
- if not match_full() then
-    update matchcandidatures
-    set confirmed = confirmer
-    where team = teamName and match = matchno;
+ if not match_full(new.match) then
+    return new;
  else
-    	raise exception 'Impossibile confermare la candidatura della squadra % per il match %.', teamName,matchno;
+    	raise exception 'Impossibile confermare la candidatura della squadra % per il match %.', new.team,new.match;
  end if;
- return new;
 end;
 $$;
 
 
-ALTER FUNCTION bdproject.proc_confirm_team_for_match(teamname character varying, matchno bigint, confirmer character varying) OWNER TO postgres;
+ALTER FUNCTION bdproject.proc_confirm_team_for_match() OWNER TO strafo;
 
 --
--- Name: FUNCTION proc_confirm_team_for_match(teamname character varying, matchno bigint, confirmer character varying); Type: COMMENT; Schema: bdproject; Owner: postgres
+-- Name: FUNCTION proc_confirm_team_for_match(); Type: COMMENT; Schema: bdproject; Owner: strafo
 --
 
-COMMENT ON FUNCTION bdproject.proc_confirm_team_for_match(teamname character varying, matchno bigint, confirmer character varying) IS 'procedura che viene attivata quando si cerca di confermare una squadra che si candida per una partita';
+COMMENT ON FUNCTION bdproject.proc_confirm_team_for_match() IS 'procedura che viene attivata quando si cerca di confermare una squadra che si candida per una partita';
 
 
 --
@@ -1374,6 +1371,13 @@ COMMENT ON TRIGGER check_insert_update_result ON bdproject.outcomes IS 'Controll
 
 
 --
+-- Name: matchcandidatures check_team_confirmation; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER check_team_confirmation AFTER UPDATE ON bdproject.matchcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_confirm_team_for_match();
+
+
+--
 -- Name: teamcandidatures check_team_not_full; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
@@ -1398,7 +1402,7 @@ CREATE CONSTRAINT TRIGGER check_team_validity AFTER UPDATE OF confirmed ON bdpro
 -- Name: TRIGGER check_team_validity ON matchcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
 --
 
-COMMENT ON TRIGGER check_team_validity ON bdproject.matchcandidatures IS 'La  candidature  della  squadra  viene  confermata  solo  se  il  numero  minimo  di  iscritti  alla  squadra  è  stato  raggiunto  e  non  si  è  superato  il  numero  massimo  di  giocatori  per  quella  categoria. ';
+COMMENT ON TRIGGER check_team_validity ON bdproject.matchcandidatures IS 'La candidatura della squadra viene confermata solo se il match non è già prontato.';
 
 
 --
