@@ -85,6 +85,18 @@ CREATE TYPE bdproject.privilege AS ENUM (
 ALTER TYPE bdproject.privilege OWNER TO postgres;
 
 --
+-- Name: ruolo; Type: TYPE; Schema: bdproject; Owner: strafo
+--
+
+CREATE TYPE bdproject.ruolo AS ENUM (
+    'arbitro',
+    'giocatore'
+);
+
+
+ALTER TYPE bdproject.ruolo OWNER TO strafo;
+
+--
 -- Name: sport; Type: TYPE; Schema: bdproject; Owner: postgres
 --
 
@@ -226,10 +238,28 @@ COMMENT ON FUNCTION bdproject.match_full(matchno bigint) IS 'Restituisce vero es
 
 
 --
--- Name: proc_trigger_matchcandidatures(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+-- Name: proc_trigger_matchcandidatures_insert(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.proc_trigger_matchcandidatures() RETURNS trigger
+CREATE FUNCTION bdproject.proc_trigger_matchcandidatures_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+begin
+	  if (new.confirmed is not NULL ) then
+		  		  raise exception 'Impossibile inserire la candidatura già confermata per % .Eseguire inserimento e conferma separatamente' ,new.match;
+	  end if;
+	  return new;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.proc_trigger_matchcandidatures_insert() OWNER TO strafo;
+
+--
+-- Name: proc_trigger_matchcandidatures_update(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.proc_trigger_matchcandidatures_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 begin
@@ -250,47 +280,44 @@ end;
 $$;
 
 
-ALTER FUNCTION bdproject.proc_trigger_matchcandidatures() OWNER TO strafo;
+ALTER FUNCTION bdproject.proc_trigger_matchcandidatures_update() OWNER TO strafo;
 
 --
--- Name: proc_trigger_outcomes(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+-- Name: proc_trigger_teamcandidatures_insert(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.proc_trigger_outcomes() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$begin
-	if(not sameadminmatch(new.match,new.admin)) then
-		raise exception 
-		'Impossibile inserire esito partita(Permesso negato).';
-	end if;
-	if(not is_match_closed(new.match))then
-		raise exception
-		'Impossibile inserire esito partita(partita ancora aperta).';
-	end if;
-	return new;	
-end;
-$$;
-
-
-ALTER FUNCTION bdproject.proc_trigger_outcomes() OWNER TO strafo;
-
---
--- Name: proc_trigger_teamcandidatures(); Type: FUNCTION; Schema: bdproject; Owner: postgres
---
-
-CREATE FUNCTION bdproject.proc_trigger_teamcandidatures() RETURNS trigger
+CREATE FUNCTION bdproject.proc_trigger_teamcandidatures_insert() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 begin
-	if (team_full(new.team)) then
-				  raise exception 'Impossibile confermare la candidatura per %, la squadra % è piena', old.applicant, old.team;
-	end if;
-	return new;
+	  if (new.admin is not NULL ) then
+		  		  raise exception 'Impossibile inserire la candidatura già confermata per % .Eseguire inserimento e conferma separatamente' ,old.applicant;
+	  end if;
+	  return new;
 end;
 $$;
 
 
-ALTER FUNCTION bdproject.proc_trigger_teamcandidatures() OWNER TO postgres;
+ALTER FUNCTION bdproject.proc_trigger_teamcandidatures_insert() OWNER TO strafo;
+
+--
+-- Name: proc_trigger_teamcandidatures_update(); Type: FUNCTION; Schema: bdproject; Owner: postgres
+--
+
+CREATE FUNCTION bdproject.proc_trigger_teamcandidatures_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+begin
+	  if (team_full(new.team)) then
+		  		  raise exception 'Impossibile confermare la candidatura per %, la squadra % è piena', old.applicant, old.team;
+	  end if;
+	  return new;
+
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.proc_trigger_teamcandidatures_update() OWNER TO postgres;
 
 --
 -- Name: referee_assigned(bigint); Type: FUNCTION; Schema: bdproject; Owner: postgres
@@ -478,7 +505,7 @@ SET default_with_oids = false;
 CREATE TABLE bdproject.buildings (
     name character varying(64) NOT NULL,
     address character varying(128),
-    phonenumber character varying(16),
+    phonenumber character varying(10) NOT NULL,
     email character varying(64),
     longitude numeric(7,4),
     latitude numeric(7,4)
@@ -670,7 +697,7 @@ CREATE TABLE bdproject.outcomes (
     winteam1 integer,
     winteam2 integer,
     admin character varying(64) NOT NULL,
-    phonenumber character varying(10)
+    insertedon date DEFAULT ('now'::text)::date NOT NULL
 );
 
 
@@ -864,8 +891,8 @@ ALTER TABLE bdproject.studycourses OWNER TO postgres;
 CREATE TABLE bdproject.teamcandidatures (
     team character varying(64) NOT NULL,
     applicant character varying NOT NULL,
-    role character varying(64),
     admin character varying(64),
+    role character varying(64) DEFAULT 'undefined'::character varying NOT NULL,
     CONSTRAINT checkconfirmer CHECK (bdproject.sameadminteam(team, admin))
 );
 
@@ -919,7 +946,8 @@ CREATE TABLE bdproject.users (
     studycourse character varying(64),
     tennismatch numeric,
     volleymatch numeric,
-    soccermatch numeric
+    soccermatch numeric,
+    phonenumber character varying(10) NOT NULL
 );
 
 
@@ -1103,7 +1131,7 @@ SELECT pg_catalog.setval('bdproject.matches_id_seq', 1, false);
 -- Data for Name: outcomes; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.outcomes (match, otype, scoreteam1, scoreteam2, goleadorteam1, goleadorteam2, winteam1, winteam2, admin, phonenumber) FROM stdin;
+COPY bdproject.outcomes (match, otype, scoreteam1, scoreteam2, goleadorteam1, goleadorteam2, winteam1, winteam2, admin, insertedon) FROM stdin;
 \.
 
 
@@ -1185,7 +1213,7 @@ COPY bdproject.studycourses (coursename) FROM stdin;
 -- Data for Name: teamcandidatures; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.teamcandidatures (team, applicant, role, admin) FROM stdin;
+COPY bdproject.teamcandidatures (team, applicant, admin, role) FROM stdin;
 \.
 
 
@@ -1209,7 +1237,7 @@ COPY bdproject.tournaments (name, ttype, manager) FROM stdin;
 -- Data for Name: users; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.users (username, password, name, surname, birthdate, birthplace, photo, regnumber, uprivilege, studycourse, tennismatch, volleymatch, soccermatch) FROM stdin;
+COPY bdproject.users (username, password, name, surname, birthdate, birthplace, photo, regnumber, uprivilege, studycourse, tennismatch, volleymatch, soccermatch, phonenumber) FROM stdin;
 \.
 
 
@@ -1341,45 +1369,52 @@ ALTER TABLE ONLY bdproject.users
 
 
 --
--- Name: matchcandidatures trigger_matchescandidatures; Type: TRIGGER; Schema: bdproject; Owner: postgres
+-- Name: matchcandidatures trigger_matchcandidatures_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
-CREATE TRIGGER trigger_matchescandidatures AFTER UPDATE ON bdproject.matchcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_matchcandidatures();
-
-
---
--- Name: TRIGGER trigger_matchescandidatures ON matchcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
---
-
-COMMENT ON TRIGGER trigger_matchescandidatures ON bdproject.matchcandidatures IS 'La  candidature  della  squadra  viene  confermata  solo  se  il  numero  minimo  di  iscritti  alla  squadra  è  stato  raggiunto  e  non  si  è  superato  il  numero  massimo  di  giocatori  per  quella  categoria.Inoltre la conferma avviene solo se ci sono ancora slot squadre disponibili per la partita. Se si è raggiunto il numero massimo la partita viene chiusa';
+CREATE TRIGGER trigger_matchcandidatures_insert AFTER INSERT ON bdproject.matchcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_matchcandidatures_insert();
 
 
 --
--- Name: outcomes trigger_outcomes; Type: TRIGGER; Schema: bdproject; Owner: postgres
+-- Name: TRIGGER trigger_matchcandidatures_insert ON matchcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
 --
 
-CREATE CONSTRAINT TRIGGER trigger_outcomes AFTER INSERT OR UPDATE ON bdproject.outcomes NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_outcomes();
-
-
---
--- Name: TRIGGER trigger_outcomes ON outcomes; Type: COMMENT; Schema: bdproject; Owner: postgres
---
-
-COMMENT ON TRIGGER trigger_outcomes ON bdproject.outcomes IS 'Controlla che l''update o l''inserimento di un risultato venga effettuato dall''admin e che al momento dell''inserimento/update la partita sia chiusa.';
+COMMENT ON TRIGGER trigger_matchcandidatures_insert ON bdproject.matchcandidatures IS 'Controlla che la squadra non si confermi autonomamente';
 
 
 --
--- Name: teamcandidatures trigger_teamcandidatures; Type: TRIGGER; Schema: bdproject; Owner: postgres
+-- Name: matchcandidatures trigger_matchescandidatures_update; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
-CREATE CONSTRAINT TRIGGER trigger_teamcandidatures AFTER UPDATE OF admin ON bdproject.teamcandidatures NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW WHEN ((new.admin IS NOT NULL)) EXECUTE PROCEDURE bdproject.proc_trigger_teamcandidatures();
+CREATE TRIGGER trigger_matchescandidatures_update AFTER UPDATE ON bdproject.matchcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_matchcandidatures_update();
 
 
 --
--- Name: TRIGGER trigger_teamcandidatures ON teamcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
+-- Name: TRIGGER trigger_matchescandidatures_update ON matchcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
 --
 
-COMMENT ON TRIGGER trigger_teamcandidatures ON bdproject.teamcandidatures IS 'Controlla se c''è posto nel team per confermare l''utente.';
+COMMENT ON TRIGGER trigger_matchescandidatures_update ON bdproject.matchcandidatures IS 'La  candidature  della  squadra  viene  confermata  solo  se  il  numero  minimo  di  iscritti  alla  squadra  è  stato  raggiunto  e  non  si  è  superato  il  numero  massimo  di  giocatori  per  quella  categoria.Inoltre la conferma avviene solo se ci sono ancora slot squadre disponibili per la partita. Se si è raggiunto il numero massimo la partita viene chiusa';
+
+
+--
+-- Name: teamcandidatures trigger_teamcandidatures_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_teamcandidatures_insert AFTER INSERT ON bdproject.teamcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_teamcandidatures_insert();
+
+
+--
+-- Name: teamcandidatures trigger_teamcandidatures_update; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_teamcandidatures_update AFTER UPDATE ON bdproject.teamcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_teamcandidatures_update();
+
+
+--
+-- Name: TRIGGER trigger_teamcandidatures_update ON teamcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
+--
+
+COMMENT ON TRIGGER trigger_teamcandidatures_update ON bdproject.teamcandidatures IS 'Controlla che l''utente non si confermi da solo.';
 
 
 --
