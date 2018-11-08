@@ -226,28 +226,37 @@ COMMENT ON FUNCTION bdproject.match_full(matchno bigint) IS 'Restituisce vero es
 
 
 --
--- Name: proc_check__team_candidature_confirmation(); Type: FUNCTION; Schema: bdproject; Owner: postgres
+-- Name: proc_trigger_matchcandidatures(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.proc_check__team_candidature_confirmation() RETURNS trigger
+CREATE FUNCTION bdproject.proc_trigger_matchcandidatures() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 begin
-	if (team_full(new.team)) then
-				  raise exception 'Impossibile confermare la candidatura per %, la squadra % è piena', old.applicant, old.team;
+  if  match_full(new.match) then
+      raise exception 'Impossibile confermare la candidatura della squadra % per il match % la partita è già piena.', new.team,new.match;
+  end if;
+
+  if (not valid_team(new.team)) then
+	    raise exception 'Impossibile confermare la candidatura per il match %, la squadra % non ha raggiunto il minimo dei giocatori o ha superato il massimo consentito.', new.match, new.team;
 	end if;
-	return new;
+
+  if  match_full(new.match) then
+    update matches
+    set mstate='closed';
+  end if;
+  return new;
 end;
 $$;
 
 
-ALTER FUNCTION bdproject.proc_check__team_candidature_confirmation() OWNER TO postgres;
+ALTER FUNCTION bdproject.proc_trigger_matchcandidatures() OWNER TO strafo;
 
 --
--- Name: proc_check_insert_match_result(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+-- Name: proc_trigger_outcomes(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.proc_check_insert_match_result() RETURNS trigger
+CREATE FUNCTION bdproject.proc_trigger_outcomes() RETURNS trigger
     LANGUAGE plpgsql
     AS $$begin
 	if(not sameadminmatch(new.match,new.admin)) then
@@ -263,43 +272,25 @@ end;
 $$;
 
 
-ALTER FUNCTION bdproject.proc_check_insert_match_result() OWNER TO strafo;
+ALTER FUNCTION bdproject.proc_trigger_outcomes() OWNER TO strafo;
 
 --
--- Name: proc_confirm_team_for_match(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+-- Name: proc_trigger_teamcandidatures(); Type: FUNCTION; Schema: bdproject; Owner: postgres
 --
 
-CREATE FUNCTION bdproject.proc_confirm_team_for_match() RETURNS trigger
+CREATE FUNCTION bdproject.proc_trigger_teamcandidatures() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 begin
- if not match_full(new.match) then
-    return new;
- else
-    	raise exception 'Impossibile confermare la candidatura della squadra % per il match % la partita è già piena.', new.team,new.match;
- end if;
-end;
-$$;
-
-
-ALTER FUNCTION bdproject.proc_confirm_team_for_match() OWNER TO strafo;
-
---
--- Name: proc_match_candidature_confirmation(); Type: FUNCTION; Schema: bdproject; Owner: postgres
---
-
-CREATE FUNCTION bdproject.proc_match_candidature_confirmation() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$begin
-	if (not valid_team(new.team)) then
-	raise exception 'Impossibile confermare la candidatura per il match %, la squadra % non ha raggiunto il minimo dei giocatori o ha superato il massimo consentito.', old.match, old.team;
+	if (team_full(new.team)) then
+				  raise exception 'Impossibile confermare la candidatura per %, la squadra % è piena', old.applicant, old.team;
 	end if;
 	return new;
 end;
 $$;
 
 
-ALTER FUNCTION bdproject.proc_match_candidature_confirmation() OWNER TO postgres;
+ALTER FUNCTION bdproject.proc_trigger_teamcandidatures() OWNER TO postgres;
 
 --
 -- Name: referee_assigned(bigint); Type: FUNCTION; Schema: bdproject; Owner: postgres
@@ -1350,52 +1341,45 @@ ALTER TABLE ONLY bdproject.users
 
 
 --
--- Name: outcomes check_insert_update_result; Type: TRIGGER; Schema: bdproject; Owner: postgres
+-- Name: matchcandidatures trigger_matchescandidatures; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
-CREATE CONSTRAINT TRIGGER check_insert_update_result AFTER INSERT OR UPDATE ON bdproject.outcomes NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_check_insert_match_result();
-
-
---
--- Name: TRIGGER check_insert_update_result ON outcomes; Type: COMMENT; Schema: bdproject; Owner: postgres
---
-
-COMMENT ON TRIGGER check_insert_update_result ON bdproject.outcomes IS 'Controlla che l''update o l''inserimento di un risultato venga effettuato dall''admin e che al momento dell''inserimento/update la partita sia chiusa.';
+CREATE TRIGGER trigger_matchescandidatures AFTER UPDATE ON bdproject.matchcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_matchcandidatures();
 
 
 --
--- Name: matchcandidatures check_team_confirmation; Type: TRIGGER; Schema: bdproject; Owner: postgres
+-- Name: TRIGGER trigger_matchescandidatures ON matchcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
 --
 
-CREATE TRIGGER check_team_confirmation AFTER UPDATE ON bdproject.matchcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_confirm_team_for_match();
-
-
---
--- Name: teamcandidatures check_team_not_full; Type: TRIGGER; Schema: bdproject; Owner: postgres
---
-
-CREATE CONSTRAINT TRIGGER check_team_not_full AFTER UPDATE OF admin ON bdproject.teamcandidatures NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW WHEN ((new.admin IS NOT NULL)) EXECUTE PROCEDURE bdproject.proc_check__team_candidature_confirmation();
+COMMENT ON TRIGGER trigger_matchescandidatures ON bdproject.matchcandidatures IS 'La  candidature  della  squadra  viene  confermata  solo  se  il  numero  minimo  di  iscritti  alla  squadra  è  stato  raggiunto  e  non  si  è  superato  il  numero  massimo  di  giocatori  per  quella  categoria.Inoltre la conferma avviene solo se ci sono ancora slot squadre disponibili per la partita. Se si è raggiunto il numero massimo la partita viene chiusa';
 
 
 --
--- Name: TRIGGER check_team_not_full ON teamcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
+-- Name: outcomes trigger_outcomes; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
-COMMENT ON TRIGGER check_team_not_full ON bdproject.teamcandidatures IS 'Controlla se c''è posto nel team per confermare l''utente.';
-
-
---
--- Name: matchcandidatures check_team_validity; Type: TRIGGER; Schema: bdproject; Owner: postgres
---
-
-CREATE CONSTRAINT TRIGGER check_team_validity AFTER UPDATE OF confirmed ON bdproject.matchcandidatures NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW WHEN ((new.confirmed IS NOT NULL)) EXECUTE PROCEDURE bdproject.proc_match_candidature_confirmation();
+CREATE CONSTRAINT TRIGGER trigger_outcomes AFTER INSERT OR UPDATE ON bdproject.outcomes NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_outcomes();
 
 
 --
--- Name: TRIGGER check_team_validity ON matchcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
+-- Name: TRIGGER trigger_outcomes ON outcomes; Type: COMMENT; Schema: bdproject; Owner: postgres
 --
 
-COMMENT ON TRIGGER check_team_validity ON bdproject.matchcandidatures IS 'La candidatura della squadra viene confermata solo se il match non è già prontato.';
+COMMENT ON TRIGGER trigger_outcomes ON bdproject.outcomes IS 'Controlla che l''update o l''inserimento di un risultato venga effettuato dall''admin e che al momento dell''inserimento/update la partita sia chiusa.';
+
+
+--
+-- Name: teamcandidatures trigger_teamcandidatures; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE CONSTRAINT TRIGGER trigger_teamcandidatures AFTER UPDATE OF admin ON bdproject.teamcandidatures NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW WHEN ((new.admin IS NOT NULL)) EXECUTE PROCEDURE bdproject.proc_trigger_teamcandidatures();
+
+
+--
+-- Name: TRIGGER trigger_teamcandidatures ON teamcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
+--
+
+COMMENT ON TRIGGER trigger_teamcandidatures ON bdproject.teamcandidatures IS 'Controlla se c''è posto nel team per confermare l''utente.';
 
 
 --
