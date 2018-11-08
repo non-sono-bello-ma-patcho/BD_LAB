@@ -283,6 +283,36 @@ $$;
 ALTER FUNCTION bdproject.proc_trigger_matchcandidatures_update() OWNER TO strafo;
 
 --
+-- Name: proc_trigger_matches_insert(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.proc_trigger_matches_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+declare
+  teamname1 varchar(64);
+  teamname2 varchar(64);
+begin
+  if(new.tournament is NULL) then
+    teamname1:=concat(new.id,'_1');
+    teamname2:=concat(new.id,'_2');
+    insert into teams values(teamname1,NULL,new.category,NULL,NULL,new.admin);
+    insert into teams values(teamname2,NULL,new.category,NULL,NULL,new.admin);
+    insert into matchcandidatures values(teamname1,new.id,NULL);
+    insert into matchcandidatures values(teamname2,new.id,NULL);
+  else
+    if(not sameadmintournaments(new.tournament,new.admin)) then
+      raise exception 'Admin match diverso da admin torneo.';
+    end if;
+  end if;
+	return new;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.proc_trigger_matches_insert() OWNER TO strafo;
+
+--
 -- Name: proc_trigger_outcomes_insert_update(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
@@ -879,7 +909,6 @@ ALTER SEQUENCE bdproject.posts_photo_seq OWNED BY bdproject.posts.photo;
 CREATE TABLE bdproject.refereecandidatures (
     applicant character varying(64) NOT NULL,
     match bigint NOT NULL,
-    matchtime timestamp without time zone,
     confirmed character varying(64),
     CONSTRAINT checkconfirmer CHECK (bdproject.sameadminmatch(match, confirmed))
 );
@@ -1020,13 +1049,6 @@ ALTER TABLE ONLY bdproject.evaluations ALTER COLUMN match SET DEFAULT nextval('b
 --
 
 ALTER TABLE ONLY bdproject.fora ALTER COLUMN photo SET DEFAULT nextval('bdproject.fora_photo_seq'::regclass);
-
-
---
--- Name: matchcandidatures match; Type: DEFAULT; Schema: bdproject; Owner: postgres
---
-
-ALTER TABLE ONLY bdproject.matchcandidatures ALTER COLUMN match SET DEFAULT nextval('bdproject.matchcandidatures_match_seq'::regclass);
 
 
 --
@@ -1224,7 +1246,7 @@ SELECT pg_catalog.setval('bdproject.posts_photo_seq', 1, false);
 -- Data for Name: refereecandidatures; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.refereecandidatures (applicant, match, matchtime, confirmed) FROM stdin;
+COPY bdproject.refereecandidatures (applicant, match, confirmed) FROM stdin;
 \.
 
 
@@ -1414,6 +1436,20 @@ CREATE TRIGGER trigger_matchcandidatures_insert AFTER INSERT ON bdproject.matchc
 --
 
 COMMENT ON TRIGGER trigger_matchcandidatures_insert ON bdproject.matchcandidatures IS 'Controlla che la squadra non si confermi autonomamente';
+
+
+--
+-- Name: matches trigger_matches_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_matches_insert AFTER INSERT ON bdproject.matches FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_matches_insert();
+
+
+--
+-- Name: TRIGGER trigger_matches_insert ON matches; Type: COMMENT; Schema: bdproject; Owner: postgres
+--
+
+COMMENT ON TRIGGER trigger_matches_insert ON bdproject.matches IS 'Se è un evento singolo lo crea e crea le squadre fittizie e le iscrive alla partita.Se invece l''evento appartiene ad un torneo contorlla che l''admin sia lo stesso';
 
 
 --
