@@ -336,6 +336,21 @@ ALTER FUNCTION bdproject.proc_trigger_matchcandidatures_insert() OWNER TO strafo
 CREATE FUNCTION bdproject.proc_trigger_matchcandidatures_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
+declare
+  cursorePartecipantiSquadraGiaInserita cursor is
+			select applicant
+			from matchcandidatures inner join teamcandidatures on matchcandidatures.team=teamcandidatures.team
+			where matchcandidatures.match=new.match
+        and matchcandidatures.confirmed is not null
+        and teamcandidatures.admin is not null
+        and teamcandidatures.team<>new.team;
+  cursorePartecipantiSquadra cursor is
+			select applicant
+			from matchcandidatures inner join teamcandidatures on matchcandidatures.team=teamcandidatures.team
+			where matchcandidatures.match=new.match
+        and matchcandidatures.confirmed is not null
+        and teamcandidatures.admin is not null
+        and teamcandidatures.team=new.team;
 begin
   if  match_full(new.match) then
       raise exception 'Impossibile confermare la candidatura della squadra % per il match % la partita è già piena.', new.team,new.match;
@@ -344,6 +359,16 @@ begin
   if (not valid_team(new.team)) then
 	    raise exception 'Impossibile confermare la candidatura per il match %, la squadra % non ha raggiunto il minimo dei giocatori o ha superato il massimo consentito.', new.match, new.team;
 	end if;
+
+  for partecipante1 in cursorePartecipantiSquadraGiaInserita
+  loop
+    for partecipante2 in cursorePartecipantiSquadra
+    loop
+      if(partecipante1=partecipante2)then
+        raise exception 'Impossibile confermare squadra %s, %s gioca già per la squadra avversaria confermata per il match.',new.team,partecipante1;
+      end if;
+    end loop;
+  end loop;
 
   if  match_full(new.match) then
     update matches
@@ -395,6 +420,12 @@ CREATE FUNCTION bdproject.proc_trigger_outcomes_insert_update() RETURNS trigger
     AS $$
 declare
 	datediff integer;
+	cursorePartecipanti cursor is
+			select applicant
+			from matchcandidatures inner join teamcandidatures on matchcandidatures.team=teamcandidatures.team
+			where matchcandidatures.match=new.match and matchcandidatures.confirmed is not null  and teamcandidatures.admin is not null ;
+	categoria bdproject.sport;
+
 begin
 	--esiste la partita in questione? sì perchè match è chiave primaria sulla tabella match--
 
@@ -414,6 +445,11 @@ begin
 		raise exception
 		'Impossibile inserire esito partita(data inserimento precedente all data della partita).';
 	end if;
+	select category from matches where matches.id=new.match into categoria;
+	for  partecipante in cursorePartecipanti
+	loop
+		execute incrementapartitegiocateutente(categoria,partecipante);
+	end loop;
 	return new;
 end;
 $$;
@@ -1576,7 +1612,7 @@ CREATE TRIGGER trigger_matchescandidatures_update AFTER UPDATE ON bdproject.matc
 -- Name: TRIGGER trigger_matchescandidatures_update ON matchcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
 --
 
-COMMENT ON TRIGGER trigger_matchescandidatures_update ON bdproject.matchcandidatures IS 'La  candidature  della  squadra  viene  confermata  solo  se  il  numero  minimo  di  iscritti  alla  squadra  è  stato  raggiunto  e  non  si  è  superato  il  numero  massimo  di  giocatori  per  quella  categoria.Inoltre la conferma avviene solo se ci sono ancora slot squadre disponibili per la partita. Se si è raggiunto il numero massimo la partita viene chiusa';
+COMMENT ON TRIGGER trigger_matchescandidatures_update ON bdproject.matchcandidatures IS 'La  candidature  della  squadra  viene  confermata  solo  se  il  numero  minimo  di  iscritti  alla  squadra  è  stato  raggiunto  e  non  si  è  superato  il  numero  massimo  di  giocatori  per  quella  categoria.Inoltre la conferma avviene solo se ci sono ancora slot squadre disponibili per la partita. Se si è raggiunto il numero massimo la partita viene chiusaControlla anche che nessuno utente faccia parte di due squadre contemporaneamente per lo stesso evento.';
 
 
 --
