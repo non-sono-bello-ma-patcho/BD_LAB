@@ -1077,17 +1077,17 @@ ALTER TABLE bdproject.tournaments OWNER TO postgres;
 CREATE TABLE bdproject.users (
     username character varying(64) NOT NULL,
     password character varying(64),
-    name character varying(64),
-    surname character varying(64),
+    name character varying(64) NOT NULL,
+    surname character varying(64) NOT NULL,
     birthdate date NOT NULL,
     birthplace character varying(64) NOT NULL,
     photo bigint NOT NULL,
-    regnumber integer,
-    uprivilege bdproject.privilege DEFAULT 'base'::bdproject.privilege,
-    studycourse character varying(64),
-    tennismatch numeric,
-    volleymatch numeric,
-    soccermatch numeric,
+    regnumber integer NOT NULL,
+    uprivilege bdproject.privilege DEFAULT 'base'::bdproject.privilege NOT NULL,
+    studycourse character varying(64) NOT NULL,
+    tennismatch numeric DEFAULT 0 NOT NULL,
+    volleymatch numeric DEFAULT 0 NOT NULL,
+    soccermatch numeric DEFAULT 0 NOT NULL,
     phonenumber character varying(10) NOT NULL
 );
 
@@ -1556,7 +1556,7 @@ CREATE TRIGGER trigger_outcomes_insert_update AFTER INSERT OR UPDATE ON bdprojec
 --
 
 COMMENT ON TRIGGER trigger_outcomes_insert_update ON bdproject.outcomes IS 'Controlla che l''update o l''inserimento di un risultato venga effettuato dall''
- ''admin e che al momento dell''inserimento/update la partita sia chiusa.';
+ ''admin e che al momento dell''inserimento/update la partita sia chiusa.Vengono infine aggiornati i numeri di partite eseguite dagli utenti.';
 
 
 --
