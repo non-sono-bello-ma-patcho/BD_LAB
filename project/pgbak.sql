@@ -177,6 +177,40 @@ COMMENT ON FUNCTION bdproject.count_player("teamName" character varying) IS 'Con
 
 
 --
+-- Name: incrementapartitegiocateutente(bdproject.sport, character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.incrementapartitegiocateutente(_tipo bdproject.sport, _username character varying) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+begin
+  if (_tipo='calcio') then
+    update users
+    set soccermatch=soccermatch+1
+    where username=_username;
+  else if (_tipo='basket') then
+          update users
+          set basketmatch=basketmatch+1
+          where username=_username;
+      else if (_tipo='pallavolo') then
+              update users
+              set volleymatch=volleymatch+1
+              where username=_username;
+          else if (_tipo='tennis') then
+                  update users
+                  set tennismatch=tennismatch+1
+                  where username=_username;
+                end if;
+          end if;
+      end if;
+  end if;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.incrementapartitegiocateutente(_tipo bdproject.sport, _username character varying) OWNER TO strafo;
+
+--
 -- Name: is_match_closed(bigint); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
@@ -1088,7 +1122,8 @@ CREATE TABLE bdproject.users (
     tennismatch numeric DEFAULT 0 NOT NULL,
     volleymatch numeric DEFAULT 0 NOT NULL,
     soccermatch numeric DEFAULT 0 NOT NULL,
-    phonenumber character varying(10) NOT NULL
+    phonenumber character varying(10) NOT NULL,
+    basketmatch numeric DEFAULT 0 NOT NULL
 );
 
 
@@ -1357,7 +1392,7 @@ COPY bdproject.tournaments (name, ttype, manager) FROM stdin;
 -- Data for Name: users; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.users (username, password, name, surname, birthdate, birthplace, photo, regnumber, uprivilege, studycourse, tennismatch, volleymatch, soccermatch, phonenumber) FROM stdin;
+COPY bdproject.users (username, password, name, surname, birthdate, birthplace, photo, regnumber, uprivilege, studycourse, tennismatch, volleymatch, soccermatch, phonenumber, basketmatch) FROM stdin;
 \.
 
 
