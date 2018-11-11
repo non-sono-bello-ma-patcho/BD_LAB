@@ -718,7 +718,7 @@ SET default_with_oids = false;
 CREATE TABLE bdproject.buildings (
     name character varying(64) NOT NULL,
     address character varying(128),
-    phonenumber character varying(10) NOT NULL,
+    phonenumber character varying(10),
     email character varying(64),
     longitude numeric(7,4),
     latitude numeric(7,4)
@@ -792,8 +792,8 @@ ALTER SEQUENCE bdproject.evaluations_match_seq OWNED BY bdproject.evaluations.ma
 
 CREATE TABLE bdproject.fora (
     studycourse character varying(64) NOT NULL,
-    category character varying(64) NOT NULL,
-    createdon date,
+    category bdproject.sport NOT NULL,
+    createdon date DEFAULT ('now'::text)::date,
     description text,
     photo bigint NOT NULL
 );
@@ -863,12 +863,12 @@ ALTER SEQUENCE bdproject.matchcandidatures_match_seq OWNED BY bdproject.matchcan
 
 CREATE TABLE bdproject.matches (
     id bigint NOT NULL,
-    building character varying(64),
+    building character varying(64) NOT NULL,
     organizedon date NOT NULL,
     insertedon date NOT NULL,
     tournament character varying(64),
-    mstate bdproject.state DEFAULT 'open'::bdproject.state,
-    admin character varying(64),
+    mstate bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
+    admin character varying(64) NOT NULL,
     category bdproject.sport NOT NULL
 );
 
@@ -902,7 +902,7 @@ ALTER SEQUENCE bdproject.matches_id_seq OWNED BY bdproject.matches.id;
 
 CREATE TABLE bdproject.outcomes (
     match bigint NOT NULL,
-    otype bdproject.sport,
+    otype bdproject.sport NOT NULL,
     scoreteam1 integer,
     scoreteam2 integer,
     goleadorteam1 text,
@@ -943,7 +943,7 @@ ALTER SEQUENCE bdproject.outcomes_match_seq OWNED BY bdproject.outcomes.match;
 
 CREATE TABLE bdproject.photos (
     id bigint NOT NULL,
-    photo integer NOT NULL
+    photo integer
 );
 
 
@@ -1118,7 +1118,7 @@ ALTER TABLE bdproject.teamcandidatures OWNER TO postgres;
 CREATE TABLE bdproject.teams (
     name character varying(64) NOT NULL,
     coloremaglia character varying(32),
-    category character varying(64),
+    category bdproject.sport NOT NULL,
     description text,
     notes text,
     admin character varying(64)
@@ -1704,6 +1704,14 @@ ALTER TABLE ONLY bdproject.evaluations
 
 
 --
+-- Name: fora fora_categories_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
+--
+
+ALTER TABLE ONLY bdproject.fora
+    ADD CONSTRAINT fora_categories_name_fk FOREIGN KEY (category) REFERENCES bdproject.categories(name);
+
+
+--
 -- Name: fora fora_photo_fkey; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
 --
 
@@ -1760,6 +1768,14 @@ ALTER TABLE ONLY bdproject.matches
 
 
 --
+-- Name: matches matches_categories_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
+--
+
+ALTER TABLE ONLY bdproject.matches
+    ADD CONSTRAINT matches_categories_name_fk FOREIGN KEY (category) REFERENCES bdproject.categories(name);
+
+
+--
 -- Name: matches matches_tournament_fkey; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
 --
 
@@ -1773,6 +1789,14 @@ ALTER TABLE ONLY bdproject.matches
 
 ALTER TABLE ONLY bdproject.outcomes
     ADD CONSTRAINT outcomes_admin_fkey FOREIGN KEY (admin) REFERENCES bdproject.users(username) ON UPDATE CASCADE;
+
+
+--
+-- Name: outcomes outcomes_categories_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
+--
+
+ALTER TABLE ONLY bdproject.outcomes
+    ADD CONSTRAINT outcomes_categories_name_fk FOREIGN KEY (otype) REFERENCES bdproject.categories(name);
 
 
 --
@@ -1877,6 +1901,14 @@ ALTER TABLE ONLY bdproject.teamcandidatures
 
 ALTER TABLE ONLY bdproject.teams
     ADD CONSTRAINT teams_admin_fkey FOREIGN KEY (admin) REFERENCES bdproject.users(username) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: teams teams_categories_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
+--
+
+ALTER TABLE ONLY bdproject.teams
+    ADD CONSTRAINT teams_categories_name_fk FOREIGN KEY (category) REFERENCES bdproject.categories(name);
 
 
 --
