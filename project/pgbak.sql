@@ -153,27 +153,27 @@ COMMENT ON FUNCTION bdproject.count_match_played_by_category(_username character
 
 
 --
--- Name: count_player(character varying); Type: FUNCTION; Schema: bdproject; Owner: postgres
+-- Name: count_player(character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.count_player("teamName" character varying) RETURNS numeric
+CREATE FUNCTION bdproject.count_player(teamname character varying) RETURNS numeric
     LANGUAGE plpgsql
     AS $$
 begin
 	select count(*)
 	from TeamCandidatures
-	where name = teamName and admin is not null;
+	where teamcandidatures.applicant = teamName and admin is not null and role='player';
 end;
 $$;
 
 
-ALTER FUNCTION bdproject.count_player("teamName" character varying) OWNER TO postgres;
+ALTER FUNCTION bdproject.count_player(teamname character varying) OWNER TO strafo;
 
 --
--- Name: FUNCTION count_player("teamName" character varying); Type: COMMENT; Schema: bdproject; Owner: postgres
+-- Name: FUNCTION count_player(teamname character varying); Type: COMMENT; Schema: bdproject; Owner: strafo
 --
 
-COMMENT ON FUNCTION bdproject.count_player("teamName" character varying) IS 'Conta i giocatori iscritti a una squadra, solo quelli confermati';
+COMMENT ON FUNCTION bdproject.count_player(teamname character varying) IS 'Conta i giocatori iscritti a una squadra, solo quelli confermati';
 
 
 --
@@ -557,6 +557,62 @@ $$;
 
 
 ALTER FUNCTION bdproject.referee_assigned(matchno bigint) OWNER TO postgres;
+
+--
+-- Name: remaning_slot_match(bigint); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.remaning_slot_match(matchno bigint) RETURNS numeric
+    LANGUAGE plpgsql
+    AS $$
+begin
+	return
+		2-(select count (*)
+			from (
+					select team 
+					from matchcandidatures
+					where match = matchno 
+						and confirmed is not null
+			) as AUX 
+		);
+end;
+
+$$;
+
+
+ALTER FUNCTION bdproject.remaning_slot_match(matchno bigint) OWNER TO strafo;
+
+--
+-- Name: FUNCTION remaning_slot_match(matchno bigint); Type: COMMENT; Schema: bdproject; Owner: strafo
+--
+
+COMMENT ON FUNCTION bdproject.remaning_slot_match(matchno bigint) IS 'Restituisce numero di slot team liberi per il match passato';
+
+
+--
+-- Name: remaning_slot_team(character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.remaning_slot_team(teamname character varying) RETURNS numeric
+    LANGUAGE plpgsql
+    AS $$
+begin
+
+  return (select Categories.max
+		from Teams join Categories on Teams.category = Categories.name
+		where Teams.name = TeamName) -count_player(teamname);
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.remaning_slot_team(teamname character varying) OWNER TO strafo;
+
+--
+-- Name: FUNCTION remaning_slot_team(teamname character varying); Type: COMMENT; Schema: bdproject; Owner: strafo
+--
+
+COMMENT ON FUNCTION bdproject.remaning_slot_team(teamname character varying) IS 'conta gli slot liberi rimasti per quella squadra ';
+
 
 --
 -- Name: sameadminmatch(bigint, character varying); Type: FUNCTION; Schema: bdproject; Owner: postgres
