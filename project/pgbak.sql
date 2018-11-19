@@ -211,6 +211,38 @@ $$;
 ALTER FUNCTION bdproject.incrementapartitegiocateutente(_tipo bdproject.sport, _username character varying) OWNER TO strafo;
 
 --
+-- Name: int_simpl_open_events(character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.int_simpl_open_events(buildingname character varying) RETURNS TABLE(matchid bigint, category bdproject.sport, freeslot bigint)
+    LANGUAGE plpgsql
+    AS $$
+begin
+  select matches.id as MatchId,categories.name as Category, 2*categories.max-count() as FreeSlot
+  from matches
+  inner join categories  on matches.category = categories.name
+  inner join matchcandidatures  on matches.id = matchcandidatures.match
+  inner join teamcandidatures on matchcandidatures.team=teamcandidatures.team
+  where matches.mstate='open'
+  and teamcandidatures.role='player'
+  and teamcandidatures.admin is not null
+  and matches.building=buildingName
+  group by matches.id,categories.name,categories.max;
+
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.int_simpl_open_events(buildingname character varying) OWNER TO strafo;
+
+--
+-- Name: FUNCTION int_simpl_open_events(buildingname character varying); Type: COMMENT; Schema: bdproject; Owner: strafo
+--
+
+COMMENT ON FUNCTION bdproject.int_simpl_open_events(buildingname character varying) IS 'Interrogazione semplice 1:determinare le categorie per cui ci sono eventi non ancora chiusi in programma in un certo impianto insieme al numero di posti giocatori ancora disponibili per quell’evento';
+
+
+--
 -- Name: is_match_closed(bigint); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
