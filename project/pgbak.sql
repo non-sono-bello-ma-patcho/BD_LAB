@@ -224,9 +224,9 @@ begin
   inner join matchcandidatures  on matches.id = matchcandidatures.match
   inner join teamcandidatures on matchcandidatures.team=teamcandidatures.team
   where matches.mstate='open'
-  and teamcandidatures.role='player'
   and teamcandidatures.admin is not null
   and matches.building=buildingName
+  and matchcandidatures.confirmed is not null 
   group by matches.id,categories.name,categories.max;
 
 end;
