@@ -162,7 +162,7 @@ CREATE FUNCTION bdproject.count_player(teamname character varying) RETURNS numer
 begin
 	select count(*)
 	from TeamCandidatures
-	where teamcandidatures.applicant = teamName and admin is not null and role='player';
+	where teamcandidatures.team = teamName and teamcandidatures.admin is not null and teamcandidatures.role='player';
 end;
 $$;
 
