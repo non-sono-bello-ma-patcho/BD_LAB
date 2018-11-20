@@ -707,7 +707,7 @@ ALTER FUNCTION bdproject.remaning_slot_team(teamname character varying) OWNER TO
 -- Name: FUNCTION remaning_slot_team(teamname character varying); Type: COMMENT; Schema: bdproject; Owner: strafo
 --
 
-COMMENT ON FUNCTION bdproject.remaning_slot_team(teamname character varying) IS 'conta gli slot liberi rimasti per quella squadra ';
+COMMENT ON FUNCTION bdproject.remaning_slot_team(teamname character varying) IS 'Restituisce il numero di posti ancora liberi per il team';
 
 
 --
