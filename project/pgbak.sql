@@ -1392,6 +1392,11 @@ ALTER TABLE ONLY bdproject.refereecandidatures ALTER COLUMN match SET DEFAULT ne
 --
 
 COPY bdproject.buildings (name, address, phonenumber, email, longitude, latitude) FROM stdin;
+A. S. D. Castelletto 	2, Via Di San Pantaleo (Genova) 	010 810006	ASDC@alice.it 	4.0128	109.0448
+A.s. Gymnotecnica 	9, Via San Pio X (Genova) 	010 318954	AG@supereva.it 	33.4111	177.1625
+A.s. Karate Team Bruno Da Boit 	17/R, Via Vicenza (Sampierdarena) 	010 415856	AKTBDB@fastweb.it 	76.8250	70.7949
+A.s. Karate Team Bruno Da Boit Palestra Karate Kung-fu Taichi 	17/A, Via Vicenza (Genova) 	010 415856	AKTBDBPKKT@atlavia.it 	41.6041	27.9673
+Associazione Dilettanti Pesca Sportiva Pra-sapello 	43/B, Via Pra  (Genova) 	010 663767	ADPSP@yahoo.it 	87.4177	68.0060
 \.
 
 
