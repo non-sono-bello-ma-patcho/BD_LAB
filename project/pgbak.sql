@@ -211,6 +211,52 @@ $$;
 ALTER FUNCTION bdproject.incrementapartitegiocateutente(_tipo bdproject.sport, _username character varying) OWNER TO strafo;
 
 --
+-- Name: int_simpl_always_acc_ref(bdproject.sport); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.int_simpl_always_acc_ref(_category bdproject.sport) RETURNS TABLE(username character varying, type character varying)
+    LANGUAGE plpgsql
+    AS $$
+begin
+  return query
+  (
+    select T.applicant as Username,'sempre_accettato' as Type
+    from matches join matchcandidatures on matches.id=matchcandidatures.match
+    join teamcandidatures T on T.team=matchcandidatures.team
+    where matches.mstate='closed' and matchcandidatures.confirmed is not null
+    and T.admin is not null and matches.category=_category
+    group  by T.applicant
+    having count(*)=
+           (
+               select count(*)
+               from matches join matchcandidatures on matches.id=matchcandidatures.match
+               join teamcandidatures  on teamcandidatures.team=matchcandidatures.team
+               where matches.mstate='closed' and matchcandidatures.confirmed is not null
+               and matches.category=_category and teamcandidatures.applicant=T.applicant
+            )
+    union
+    select T.applicant as Username,'sempre_rifiutato' as Type
+    from matches join matchcandidatures on matches.id=matchcandidatures.match
+    join teamcandidatures T on T.team=matchcandidatures.team
+    where matches.mstate='closed' and matchcandidatures.confirmed is not null
+    and T.admin is  null and matches.category=_category
+    group  by T.applicant
+    having count(*)=
+           (
+               select count(*)
+               from matches join matchcandidatures on matches.id=matchcandidatures.match
+               join teamcandidatures  on teamcandidatures.team=matchcandidatures.team
+               where matches.mstate='closed' and matchcandidatures.confirmed is not null
+               and matches.category=_category and teamcandidatures.applicant=T.applicant
+            )
+  );
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.int_simpl_always_acc_ref(_category bdproject.sport) OWNER TO strafo;
+
+--
 -- Name: int_simpl_open_events(character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
@@ -1397,6 +1443,64 @@ A.s. Gymnotecnica 	9, Via San Pio X (Genova) 	010 318954	AG@supereva.it 	33.4111
 A.s. Karate Team Bruno Da Boit 	17/R, Via Vicenza (Sampierdarena) 	010 415856	AKTBDB@fastweb.it 	76.8250	70.7949
 A.s. Karate Team Bruno Da Boit Palestra Karate Kung-fu Taichi 	17/A, Via Vicenza (Genova) 	010 415856	AKTBDBPKKT@atlavia.it 	41.6041	27.9673
 Associazione Dilettanti Pesca Sportiva Pra-sapello 	43/B, Via Pra  (Genova) 	010 663767	ADPSP@yahoo.it 	87.4177	68.0060
+Associazione Bocciofila Genovese 	130/C, Corso Monte Grappa (Genova) 	010 810770	ABG@cheapnet.it 	16.9165	11.3121
+Associazione Sportiva Blue Wave Palestra Fitness Danza 	Via Di Robilant Marina 49/R. (Genova) 	010 352618	ASBWPFD@jumpy.it 	68.1362	18.4394
+Associazione Sportiva Sisport Gym 	24, Via San Fruttuoso (Genova) 	010 511449	ASSG@email.it 	35.2484	127.4005
+Bocciofila Quarto Dei Mille 	27, Via Maggio Giovanni (Genova) 	010 391361	BQDM@lycos.it 	73.5203	134.6017
+Body Line Center 	109/R, Via Archimede (Genova) 	010 508938	BLC@virgilio.it 	66.3475	167.4001
+Campi Bocce 	10, Via Giovanni Amarena (Genova) 	010 884903	CB@fastweb.it 	86.5240	32.2994
+Campi Bocce Belvedere 	21, Corso Belvedere (Sampierdarena) 	010 465984	CBB@atlavia.it 	65.8641	26.9370
+Campi Bocce Societa  Pasubio 	46, Salita Oregina (Genova) 	010 217208	CBSP@lycos.it 	70.3039	104.3306
+Campi Da Bocce Sardelli 	150/A, Via Struppa (San Siro) 	010 809278	CDBS@libero.it 	21.6314	38.3341
+Campo Atletica Leggera Villa Gentile 	6, Via Brigata Salerno (Genova) 	010 397531	CALVG@email.it 	17.5970	78.8906
+Centro Universitario Sportivo Genovese 	21/A, Via Monte Zovetto (Genova) 	010 315443	CUSG@tele2.it 	1.1214	148.0881
+Circolo Tennis Dipendenti Italimpianti Circolo Tennis 	Via Liri Alberto 8 (Genova) 	010 311892	CTDICT@lycos.it 	38.7790	107.4877
+City Gym 	1, Via V Dicembre (Genova) 	010 580412	CG@cheapnet.it 	75.2836	24.1564
+Club Alpino Italiano 	7, Gall. Mazzini Giuseppe (Genova) 	010 592122	CAI@email.it 	10.0844	168.6647
+Cus Genova 	21/A, Via Monte Zovetto (Genova) 	010 230558	CG@lycos.it 	34.1867	171.3487
+Cus Genova Golf Academy Campo Pratica 	Via Degli Anemoni (Genova) 	010 393839	CGGACP@vodafone.it 	30.5880	85.8054
+Cus Genova Palazzetto Dello Sport 	54/R, Viale Gambaro Francesco (Genova) 	010 314669	CGPDS@lycos.it 	10.7078	149.4802
+Eden Gym 	2/A, Via Santa Maria Via Lata (Genova) 	010 564600	EG@supereva.it 	50.4331	134.6218
+Eden Gym S.s.d. A R.l. 	2, Via S. Maria In V. Lata (Genova) 	010 564600	EGSAR@fastweb.it 	15.6184	101.1732
+Empire 	63/R, Via Fieschi (Genova) 	010 586671	E@jumpy.it 	70.7326	33.5283
+Engi Spa 	2, Via Al Porto Antico (Genova) 	010 252463	ES@galactica.it 	28.4877	107.6781
+European Sub Service 	5, Via Del Tritone (Genova) 	010 384264	ESS@blu.it 	23.3775	37.6361
+Fitness Center 	68, Via Al Santuario N.S. Della Guardia (Bolzaneto) 	010 714272	FC@tele2.it 	37.4732	102.7956
+Fratellanza Nuoto Associazione Sportiva Dilettantistica 	Via Coni Zugna (Genova) 	010 782968	FNASD@worldonline.it 	29.3885	80.4834
+Golf Garden Peirano 	32/canc., v. Jenner (Genova) 	010 317978	GGP@cheapnet.it 	62.2747	155.7408
+Gymnastic Club 	12/R, Via Cassini (Sampierdarena) 	010 463455	GC@libero.it 	38.1365	114.4848
+Il Tempio Della Salute 	54/R, Via Alla Porta Degli Archi (Genova) 	010 591541	ITDS@worldonline.it 	48.0828	130.8285
+Immagine Danza 	1/R, Via Carlo Varese (Genova) 	010 504417	ID@worldonline.it 	1.2103	113.5030
+La Baia Degli Angeli 	19, Corso Italia (Genova) 	010 314247	LBDA@yahoo.it 	18.7841	132.6286
+La Palestra Di Nervi 	32/R, Via Del Commercio (Nervi) 	010 322626	LPDN@email.it 	70.3921	130.7391
+Margone Marco 	Corso Italia 19 (Genova) 	010 314247	MM@jumpy.it 	69.6055	125.0211
+Masters  Gym 	3, Via Livorno (Genova) 	010 312374	MG@fastweb.it 	10.3806	7.7705
+Oasi Tennis E Calcetto 	18, Via Capolungo (Nervi) 	010 323296	OTEC@fastweb.it 	4.2846	48.8992
+Palestra 	38, Via Donghi (Genova) 	010 518110	P@yahoo.it 	75.6904	131.0552
+Palestra Benefit 	99/R, Via Cesarea (Genova) 	010 543039	PB@lycos.it 	57.2738	66.9251
+Palestra Fitness 	2/3, Piazza Galeazzo Alessi (Genova) 	010 588330	PF@alice.it 	31.2551	100.5543
+Palestra Italia 	Societa  Sportiva Dilettantistica A Responsabilita  Limitata - V 	010 318587	PI@fastweb.it 	51.6464	140.9201
+Palme Sport Apd Tennis 	3, Salita Della Madonnetta (Genova) 	010 219669	PSAT@cheapnet.it 	61.3325	56.2913
+Park Tennis Club 	18, Via Zara (Genova) 	010 315546	PTC@fastweb.it 	70.6626	40.1213
+Piscina Di San Fruttuoso 	7, Via G. B. D Albertis (Genova) 	010 513873	PDSF@lycos.it 	45.1299	37.0240
+Polisportiva La Fratellanza 	Sezione Nuoto - 2, Piazzale Attilio Ghiglione (Pontedecimo) 	010 782968	PLF@alice.it 	56.3509	159.7408
+Porto Antico 	Via Al Porto Antico (Genova) 	010 782968	PA@email.it 	18.8739	37.8225
+Rio San Michele 	24, Via Giuseppe Ungaretti (Pra) 	010 663286	RSM@lycos.it 	16.8571	125.1325
+Rubattino Raffaele Societa  Ginnastica Artistica Ritmica Fitness	17/C, Via Saluzzo (Genova) 	010 317586	RRSGARF@lycos.it 	83.0769	10.9306
+S. S. D. Dlf Per Lo Sport 	8, Via Roggerone (Rivarolo Ligure) 	010 261627	SSDDPLS@cheapnet.it 	39.7153	106.3417
+Scuola Di Taekwondo Genova Asd 	63, v. Sturla (Genova) 	010 389682	SDTGA@vodafone.it 	38.7552	69.4698
+Sezione Cai Di Genova 	1, Via Parmigiani (Genova) 	010 565564	SCDG@cheapnet.it 	16.8679	98.8781
+Sezione Cai Di Sampierdarena 	1, Via Battista Agnese (Sampierdarena) 	010 466709	SCDS@yahoo.it 	70.4912	70.2974
+Societa  Ginnastica Andrea Doria 	2, Viale Aspromonte (Genova) 	010 582853	SGAD@tiscali.it 	23.9353	148.9566
+Societa  Ginnastica Andrea Doria Segreteria 	Viale Aspromonte 2 (Genova) 	010 561850	SGADS@libero.it 	72.7257	19.7712
+Societa  Ginnastica Andrea Doria Sezione Tennis 	2, Viale Aspromonte (Genova) 	010 594012	SGADST@worldonline.it 	49.9435	8.6066
+Stadio Carlini 	31, Via Vernazza (Genova) 	010 388630	SC@tiscali.it 	45.0358	101.1892
+Stadio Luigi Ferraris 	Corso A. De Stefanis (Genova) 	010 612831	SLF@galactica.it 	23.5769	151.0014
+Tanny & Sinewy 	139, Via Angelo Scarsellini (Sampierdarena) 	010 415247	TS@blu.it 	64.6840	81.3498
+Tennis Club Le Palme Campi Da Tennis 	4, Via Campanella Tommaso (Genova) 	010 313056	TCLPCDT@virgilio.it 	38.0093	134.5888
+Tiro A Segno Nazionale 	31, Via Vernazza (Genova) 	010 388888	TASN@worldonline.it 	14.0898	14.1166
+Tiro Al Segno 	50, Via Al Poligono Di Quezzi (Genova) 	010 389100	TAS@tele2.it 	22.7039	40.0484
+Virgin Active Genova 	153/R, Via Paolo Mantovani (Sampierdarena) 	800 914555	VAG@atlavia.it 	75.9089	70.7233
 \.
 
 
