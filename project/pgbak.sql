@@ -1770,6 +1770,14 @@ COPY bdproject.teams (name, coloremaglia, category, description, notes, admin) F
 --
 
 COPY bdproject.tournaments (name, ttype, manager) FROM stdin;
+varano	italiana	zazzeraandrea
+bauli	italiana	stefaniniandrea
+melegatti	italiana	conteandrea
+balocco	italiana	scottiadriana
+motta	italiana	gentiloniandrea
+lindt	italiana	oliveriaurora
+novi	italiana	zolezzialberto
+caffarel	italiana	pannellaaurora
 \.
 
 
