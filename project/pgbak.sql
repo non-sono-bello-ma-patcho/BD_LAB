@@ -243,6 +243,70 @@ COMMENT ON FUNCTION bdproject.int_simpl_open_events(buildingname character varyi
 
 
 --
+-- Name: int_simpl_veterans(bigint); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.int_simpl_veterans(eventoid bigint) RETURNS TABLE(username character varying, teamname character varying, role character varying, matchesnumber numeric)
+    LANGUAGE plpgsql
+    AS $$
+declare
+  nome_categoria bdproject.sport:=(select category from matches where id=eventoId);
+begin
+  if(nome_categoria='volley')then
+    return query
+    select username,teamcandidatures.team,teamcandidatures.role,users.volleymatch
+    from matchcandidatures
+    join teamcandidatures on matchcandidatures.team=teamcandidatures.team
+    join users  on teamcandidatures.applicant = users.username
+    where matchcandidatures.confirmed is not null
+    and teamcandidatures is not null
+    order by users.volleymatch;
+  end if;
+
+  if(nome_categoria='tennis')then
+    return query
+    select username,teamcandidatures.team,teamcandidatures.role,users.tennismatch
+    from matchcandidatures
+    join teamcandidatures on matchcandidatures.team=teamcandidatures.team
+    join users  on teamcandidatures.applicant = users.username
+    where matchcandidatures.confirmed is not null
+    and teamcandidatures is not null
+    order by users.tennismatch;
+  end if;
+
+  if(nome_categoria='calcio')then
+    return query
+    select username,teamcandidatures.team,teamcandidatures.role,users.soccermatch
+    from matchcandidatures join teamcandidatures on matchcandidatures.team=teamcandidatures.team
+    join users  on teamcandidatures.applicant = users.username
+    where matchcandidatures.confirmed is not null and teamcandidatures is not null
+    order by users.soccermatch;
+  end if;
+
+  if(nome_categoria='basket')then
+    return query
+    select username,teamcandidatures.team,teamcandidatures.role,users.basketmatch
+    from matchcandidatures
+    join teamcandidatures on matchcandidatures.team=teamcandidatures.team
+    join users  on teamcandidatures.applicant = users.username
+    where matchcandidatures.confirmed is not null
+    and teamcandidatures is not null
+    order by users.basketmatch;
+  end if;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.int_simpl_veterans(eventoid bigint) OWNER TO strafo;
+
+--
+-- Name: FUNCTION int_simpl_veterans(eventoid bigint); Type: COMMENT; Schema: bdproject; Owner: strafo
+--
+
+COMMENT ON FUNCTION bdproject.int_simpl_veterans(eventoid bigint) IS 'Int_simpl_veterans determina, per un certo evento, i giocatori candidati e confermati con un numero di partite disputate nella categoria dell’evento più alto.';
+
+
+--
 -- Name: is_match_closed(bigint); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
