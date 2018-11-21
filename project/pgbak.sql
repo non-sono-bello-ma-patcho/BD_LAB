@@ -245,6 +245,38 @@ $$;
 ALTER FUNCTION bdproject.int_analysis_most_pop_cat() OWNER TO strafo;
 
 --
+-- Name: int_analysis_woman_cat_course(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.int_analysis_woman_cat_course() RETURNS TABLE(category bdproject.sport, studycourse character varying, womanpercentage real)
+    LANGUAGE plpgsql
+    AS $$
+begin
+return query
+  select M.category as Category,U.studycourse,
+         (cast(count(distinct username) as decimal(5,2))/
+         (
+            select count(distinct username)
+            from matches join matchcandidatures on matches.id = matchcandidatures.match
+            join teamcandidatures on matchcandidatures.team=teamcandidatures.team
+            join users  on users.username=teamcandidatures.applicant
+            where teamcandidatures.admin is not null and matchcandidatures.confirmed is not null
+            and matches.mstate='closed' and users.studycourse=U.studycourse and M.category=matches.category
+         ))*100 as WomanPercentage
+  from matches M join matchcandidatures on M.id = matchcandidatures.match
+  join teamcandidatures on matchcandidatures.team=teamcandidatures.team
+  join users U on U.username=teamcandidatures.applicant
+  where teamcandidatures.admin is not null and matchcandidatures.confirmed is not null
+  and M.mstate='closed'
+  group by M.category,U.studycourse
+  order by M.category,U.studycourse;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.int_analysis_woman_cat_course() OWNER TO strafo;
+
+--
 -- Name: int_simpl_always_acc_ref(bdproject.sport); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
