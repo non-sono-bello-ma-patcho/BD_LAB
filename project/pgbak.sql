@@ -1268,7 +1268,8 @@ CREATE TABLE bdproject.outcomes (
     winteam1 integer,
     winteam2 integer,
     admin character varying(64) NOT NULL,
-    insertedon date DEFAULT ('now'::text)::date NOT NULL
+    insertedon date DEFAULT ('now'::text)::date NOT NULL,
+    duration time without time zone DEFAULT '00:00:00'::time without time zone
 );
 
 
@@ -1726,6 +1727,21 @@ SELECT pg_catalog.setval('bdproject.matchcandidatures_match_seq', 1, false);
 
 COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category) FROM stdin;
 11	Park Tennis Club 	2018-11-23	2018-11-22	motta	open	gentiloniandrea	tennis
+12	Park Tennis Club 	2018-11-23	2018-11-22	motta	open	gentiloniandrea	tennis
+13	Park Tennis Club 	2018-11-23	2018-11-22	motta	open	gentiloniandrea	tennis
+14	Park Tennis Club 	2018-11-23	2018-11-22	motta	open	gentiloniandrea	tennis
+15	Park Tennis Club 	2018-11-23	2018-11-22	motta	open	gentiloniandrea	tennis
+16	Park Tennis Club 	2018-12-23	2018-11-22	motta	open	gentiloniandrea	tennis
+17	Park Tennis Club 	2018-12-23	2018-11-22	motta	open	gentiloniandrea	tennis
+18	Park Tennis Club 	2018-12-23	2018-11-22	motta	open	gentiloniandrea	tennis
+19	Park Tennis Club 	2018-12-23	2018-11-22	motta	open	gentiloniandrea	tennis
+20	Park Tennis Club 	2018-12-23	2018-11-22	motta	open	gentiloniandrea	tennis
+21	Park Tennis Club 	2018-12-23	2018-11-22	varano	open	zazzeraandrea	tennis
+22	Park Tennis Club 	2018-12-23	2018-11-22	varano	open	zazzeraandrea	tennis
+23	Park Tennis Club 	2018-12-23	2018-11-22	varano	open	zazzeraandrea	tennis
+24	Park Tennis Club 	2018-11-23	2018-11-22	bauli	open	stefaniniandrea	tennis
+25	Park Tennis Club 	2018-11-23	2018-11-22	bauli	open	stefaniniandrea	tennis
+26	Park Tennis Club 	2018-11-23	2018-11-22	bauli	open	stefaniniandrea	tennis
 \.
 
 
@@ -1733,14 +1749,14 @@ COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstat
 -- Name: matches_id_seq; Type: SEQUENCE SET; Schema: bdproject; Owner: postgres
 --
 
-SELECT pg_catalog.setval('bdproject.matches_id_seq', 11, true);
+SELECT pg_catalog.setval('bdproject.matches_id_seq', 26, true);
 
 
 --
 -- Data for Name: outcomes; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.outcomes (match, otype, scoreteam1, scoreteam2, goleadorteam1, goleadorteam2, winteam1, winteam2, admin, insertedon) FROM stdin;
+COPY bdproject.outcomes (match, otype, scoreteam1, scoreteam2, goleadorteam1, goleadorteam2, winteam1, winteam2, admin, insertedon, duration) FROM stdin;
 \.
 
 
