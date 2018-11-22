@@ -999,6 +999,37 @@ categoria.min<=numero_giocatori<=categoria.max';
 
 
 --
+-- Name: workinghours(date); Type: FUNCTION; Schema: bdproject; Owner: andreo
+--
+
+CREATE FUNCTION bdproject.workinghours(cdate date) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+declare
+  cmonth integer:= date_trunc('month', (cdate));
+  cyear integer:= date_trunc('year', (cdate));
+  daysnum integer:= (select date_part('days',
+                                      (cyear::text ||'-'|| cmonth::text ||'-01')::date
+                                        + '1 month' :: interval
+                                        - '1 day' :: interval
+                                )
+                    );
+BEGIN
+  return (with days as
+  (
+      select dd, extract(DOW from dd) dw
+      from generate_series((cyear :: text ||'-'|| cmonth :: text ||'-01') :: date,
+                           (cyear :: text ||'-'|| cmonth :: text ||daysnum :: text) :: date, '1 day' :: interval) dd
+  )
+  select * from days where dw not in (6, 0)
+  );
+END;
+$$;
+
+
+ALTER FUNCTION bdproject.workinghours(cdate date) OWNER TO andreo;
+
+--
 -- Name: ispremium(character varying); Type: FUNCTION; Schema: public; Owner: andreo
 --
 
@@ -1128,6 +1159,37 @@ $_$;
 
 
 ALTER FUNCTION public.sameadmintournaments(character varying, character varying) OWNER TO andreo;
+
+--
+-- Name: workinghours(date); Type: FUNCTION; Schema: public; Owner: andreo
+--
+
+CREATE FUNCTION public.workinghours(cdate date) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+declare
+  cmonth integer:= date_trunc('month', (cdate));
+  cyear integer:= date_trunc('year', (cdate));
+  daysnum integer:= (select date_part('days',
+                                      (cyear::text ||'-'|| cmonth::text ||'-01')::date
+                                        + '1 month' :: interval
+                                        - '1 day' :: interval
+                                )
+                    );
+BEGIN
+  return (with days as
+  (
+      select dd, extract(DOW from dd) dw
+      from generate_series((cyear :: text ||'-'|| cmonth :: text ||'-01') :: date,
+                           (cyear :: text ||'-'|| cmonth :: text ||daysnum :: text) :: date, '1 day' :: interval) dd
+  )
+  select * from days where dw not in (6, 0)
+  );
+END;
+$$;
+
+
+ALTER FUNCTION public.workinghours(cdate date) OWNER TO andreo;
 
 SET default_tablespace = '';
 
