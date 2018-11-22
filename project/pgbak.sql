@@ -1168,8 +1168,8 @@ CREATE FUNCTION public.workinghours(cdate date) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare
-  cmonth date:= date_trunc('month', cdate);
-  cyear int:= date_trunc('year', cdate);
+  cmonth int:= extract('month' from cdate);
+  cyear int:= extract('year' from cdate);
   daysnum int:= date_part('days', date_trunc('month', cdate) + '1 month'::interval - '1 day' :: interval)::integer;
 BEGIN
   return (with days as
