@@ -1013,6 +1013,56 @@ $_$;
 
 ALTER FUNCTION public.ispremium(character varying) OWNER TO andreo;
 
+--
+-- Name: proc_trigger_matches_insert(); Type: FUNCTION; Schema: public; Owner: andreo
+--
+
+CREATE FUNCTION public.proc_trigger_matches_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+declare
+  teamname1 character varying(64);
+  teamname2 character varying(64);
+begin
+  if(new.tournament is NULL) then
+    teamname1:=concat(new.id,'_1');
+    teamname2:=concat(new.id,'_2');
+    insert into teams values(teamname1,NULL,new.category,NULL,NULL,new.admin);
+    insert into teams values(teamname2,NULL,new.category,NULL,NULL,new.admin);
+    insert into matchcandidatures values(cast(teamname1 as varchar) ,new.id,NULL);
+    insert into matchcandidatures values(cast(teamname2 as varchar) ,new.id,NULL);
+  else
+    if(not bdproject.sameadmintournaments(new.tournament,new.admin)) then
+      raise exception 'Admin match diverso da admin torneo.';
+    end if;
+  end if;
+	return new;
+end;
+$$;
+
+
+ALTER FUNCTION public.proc_trigger_matches_insert() OWNER TO andreo;
+
+--
+-- Name: sameadmintournaments(character varying, character varying); Type: FUNCTION; Schema: public; Owner: andreo
+--
+
+CREATE FUNCTION public.sameadmintournaments(character varying, character varying) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $_$
+begin
+	return exists(
+		select * from bdproject.tournaments
+		where name = $1 and manager = $2
+		);
+end;
+
+
+$_$;
+
+
+ALTER FUNCTION public.sameadmintournaments(character varying, character varying) OWNER TO andreo;
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
@@ -1173,7 +1223,7 @@ CREATE TABLE bdproject.matches (
     id bigint NOT NULL,
     building character varying(64) NOT NULL,
     organizedon date NOT NULL,
-    insertedon date NOT NULL,
+    insertedon date DEFAULT now() NOT NULL,
     tournament character varying(64),
     mstate bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
     admin character varying(64) NOT NULL,
@@ -1621,6 +1671,7 @@ Virgin Active Genova 	153/R, Via Paolo Mantovani (Sampierdarena) 	800 914555	VAG
 --
 
 COPY bdproject.categories (name, regulation, min, max, photo) FROM stdin;
+tennis	tennis regulation your honor	1	2	\N
 \.
 
 
@@ -1674,6 +1725,7 @@ SELECT pg_catalog.setval('bdproject.matchcandidatures_match_seq', 1, false);
 --
 
 COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category) FROM stdin;
+11	Park Tennis Club 	2018-11-23	2018-11-22	motta	open	gentiloniandrea	tennis
 \.
 
 
@@ -1681,7 +1733,7 @@ COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstat
 -- Name: matches_id_seq; Type: SEQUENCE SET; Schema: bdproject; Owner: postgres
 --
 
-SELECT pg_catalog.setval('bdproject.matches_id_seq', 1, false);
+SELECT pg_catalog.setval('bdproject.matches_id_seq', 11, true);
 
 
 --
