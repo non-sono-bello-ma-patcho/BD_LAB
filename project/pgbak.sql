@@ -224,6 +224,64 @@ $$;
 ALTER FUNCTION bdproject.incrementapartitegiocateutente(_tipo bdproject.sport, _username character varying) OWNER TO strafo;
 
 --
+-- Name: int_analysis_best_mactive_course(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.int_analysis_best_mactive_course() RETURNS TABLE(studycourse character varying, category bdproject.sport, type character varying)
+    LANGUAGE plpgsql
+    AS $$
+begin
+return query
+
+  select U.studycourse,M.category,'massima scelta'
+  from matches M join matchcandidatures on M.id = matchcandidatures.match
+  join teamcandidatures on teamcandidatures.team=matchcandidatures.team
+  join users U on U.username=teamcandidatures.applicant
+  where teamcandidatures.admin is not null and matchcandidatures.confirmed is not null
+  group by U.studycourse,M.category
+  having count(M.category)=(
+                            select max(T.max)
+                            from (select count(matches.id) as max
+                                  from matches
+                                         join matchcandidatures on matches.id = matchcandidatures.match
+                                         join teamcandidatures on teamcandidatures.team = matchcandidatures.team
+                                         join users on users.username = teamcandidatures.applicant
+                                  where teamcandidatures.admin is not null
+                                    and matchcandidatures.confirmed is not null
+                                    and users.studycourse = U.studycourse
+                                  group by users.studycourse, matches.category
+                                 ) as T
+                           )
+  union
+  select U.studycourse,M.category,'minima scelta'
+  from matches M join matchcandidatures on M.id = matchcandidatures.match
+  join teamcandidatures on teamcandidatures.team=matchcandidatures.team
+  join users U on U.username=teamcandidatures.applicant
+  where teamcandidatures.admin is not null and matchcandidatures.confirmed is not null
+  group by U.studycourse,M.category
+  having count(M.category)=(
+                            select min(T.max)
+                            from (select count(matches.id) as max
+                                  from matches
+                                         join matchcandidatures on matches.id = matchcandidatures.match
+                                         join teamcandidatures on teamcandidatures.team = matchcandidatures.team
+                                         join users on users.username = teamcandidatures.applicant
+                                  where teamcandidatures.admin is not null
+                                    and matchcandidatures.confirmed is not null
+                                    and users.studycourse = U.studycourse
+                                  group by users.studycourse, matches.category
+                                 ) as T
+                           )
+
+order by studycourse,category;
+
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.int_analysis_best_mactive_course() OWNER TO strafo;
+
+--
 -- Name: int_analysis_most_pop_cat(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
@@ -1796,6 +1854,9 @@ Virgin Active Genova 	153/R, Via Paolo Mantovani (Sampierdarena) 	800 914555	VAG
 
 COPY bdproject.categories (name, regulation, min, max, photo) FROM stdin;
 tennis	tennis regulation your honor	1	2	\N
+calcio	è bello	7	20	\N
+volley	super  bello	5	12	\N
+basket	molto bello	2	10	\N
 \.
 
 
