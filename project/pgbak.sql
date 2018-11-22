@@ -1168,22 +1168,17 @@ CREATE FUNCTION public.workinghours(cdate date) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare
-  cmonth integer:= date_trunc('month', (cdate));
-  cyear integer:= date_trunc('year', (cdate));
-  daysnum integer:= (select date_part('days',
-                                      (cyear::text ||'-'|| cmonth::text ||'-01')::date
-                                        + '1 month' :: interval
-                                        - '1 day' :: interval
-                                )
-                    );
+  cmonth date:= date_trunc('month', cdate);
+  cyear int:= date_trunc('year', cdate);
+  daysnum int:= date_part('days', date_trunc('month', cdate) + '1 month'::interval - '1 day' :: interval)::integer;
 BEGIN
   return (with days as
   (
       select dd, extract(DOW from dd) dw
       from generate_series((cyear :: text ||'-'|| cmonth :: text ||'-01') :: date,
-                           (cyear :: text ||'-'|| cmonth :: text ||daysnum :: text) :: date, '1 day' :: interval) dd
+                           (cyear :: text ||'-'|| cmonth :: text || '-' || daysnum :: text) :: date, '1 day' :: interval) dd
   )
-  select * from days where dw not in (6, 0)
+  select count(*) from days where dw not in (6, 0)
   );
 END;
 $$;
