@@ -998,6 +998,21 @@ COMMENT ON FUNCTION bdproject.valid_team(teamname character varying) IS 'control
 categoria.min<=numero_giocatori<=categoria.max';
 
 
+--
+-- Name: ispremium(character varying); Type: FUNCTION; Schema: public; Owner: andreo
+--
+
+CREATE FUNCTION public.ispremium(character varying) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $_$
+BEGIN
+  return $1 in (select username from bdproject.users where uprivilege = 'premium');
+END;
+$_$;
+
+
+ALTER FUNCTION public.ispremium(character varying) OWNER TO andreo;
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
@@ -1427,7 +1442,8 @@ ALTER TABLE bdproject.teams OWNER TO postgres;
 CREATE TABLE bdproject.tournaments (
     name character varying(64) NOT NULL,
     ttype bdproject.girone DEFAULT 'italiana'::bdproject.girone NOT NULL,
-    manager character varying(64) NOT NULL
+    manager character varying(64) NOT NULL,
+    CONSTRAINT manager_premium CHECK (public.ispremium(manager))
 );
 
 
