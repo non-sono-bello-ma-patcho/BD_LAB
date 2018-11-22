@@ -1044,6 +1044,72 @@ $$;
 ALTER FUNCTION public.proc_trigger_matches_insert() OWNER TO andreo;
 
 --
+-- Name: proc_trigger_outcomes_insert_update(); Type: FUNCTION; Schema: public; Owner: andreo
+--
+
+CREATE FUNCTION public.proc_trigger_outcomes_insert_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+declare
+	datediff integer;
+	cursorePartecipanti cursor is
+			select applicant
+			from matchcandidatures inner join teamcandidatures on matchcandidatures.team=teamcandidatures.team
+			where matchcandidatures.match=new.match and matchcandidatures.confirmed is not null  and teamcandidatures.admin is not null ;
+	categoria bdproject.sport;
+
+begin
+	--esiste la partita in questione? sì perchè match è chiave primaria sulla tabella match--
+
+	--l'admin che la conferma è quello giusto?--
+	if(not bdproject.sameadminmatch(new.match,new.admin)) then
+		raise exception
+		'Impossibile inserire esito partita(Permesso negato).';
+	end if;
+	--il match è ancora aperto--
+	if(not bdproject.is_match_closed(new.match))then
+		raise exception
+		'Impossibile inserire esito partita(partita ancora aperta).';
+	end if;
+	--la data di inserimeto è congruente con quella del match?--
+	select datediff(day,(select organizedon from matches),new.insertedon) into datediff;
+	if(datediff<0)then
+		raise exception
+		'Impossibile inserire esito partita(data inserimento precedente all data della partita).';
+	end if;
+	select category from matches where matches.id=new.match into categoria;
+	for  partecipante in cursorePartecipanti
+	loop
+		execute incrementapartitegiocateutente(categoria,partecipante);
+	end loop;
+	return new;
+end;
+$$;
+
+
+ALTER FUNCTION public.proc_trigger_outcomes_insert_update() OWNER TO andreo;
+
+--
+-- Name: sameadminmatch(bigint, character varying); Type: FUNCTION; Schema: public; Owner: andreo
+--
+
+CREATE FUNCTION public.sameadminmatch(bigint, character varying) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $_$
+begin
+	return exists(
+		select * from bdproject.matches
+		where id = $1 and admin = $2
+		);
+end;
+
+
+$_$;
+
+
+ALTER FUNCTION public.sameadminmatch(bigint, character varying) OWNER TO andreo;
+
+--
 -- Name: sameadmintournaments(character varying, character varying); Type: FUNCTION; Schema: public; Owner: andreo
 --
 
