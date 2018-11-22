@@ -2097,6 +2097,8 @@ COPY bdproject.teamcandidatures (team, applicant, admin, role) FROM stdin;
 --
 
 COPY bdproject.teams (name, coloremaglia, category, description, notes, admin) FROM stdin;
+Non sono bello ma patcho	\N	basket	ci mettiamo impegno	\N	straforiniandrea
+Team1	\N	basket	\N	\N	malattoandrea
 \.
 
 
