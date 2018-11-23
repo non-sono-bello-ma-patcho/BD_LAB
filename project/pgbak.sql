@@ -1234,6 +1234,24 @@ $$;
 ALTER FUNCTION public.proc_trigger_outcomes_insert_update() OWNER TO andreo;
 
 --
+-- Name: proc_trigger_teamcandidatures_insert(); Type: FUNCTION; Schema: public; Owner: andreo
+--
+
+CREATE FUNCTION public.proc_trigger_teamcandidatures_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+begin
+	  if (new.admin is not NULL ) then
+		  		  raise exception 'Impossibile inserire la candidatura già confermata per % .Eseguire inserimento e conferma separatamente' ,new.applicant;
+	  end if;
+	  return new;
+end;
+$$;
+
+
+ALTER FUNCTION public.proc_trigger_teamcandidatures_insert() OWNER TO andreo;
+
+--
 -- Name: sameadminmatch(bigint, character varying); Type: FUNCTION; Schema: public; Owner: andreo
 --
 
@@ -1700,7 +1718,7 @@ CREATE TABLE bdproject.teamcandidatures (
     applicant character varying NOT NULL,
     admin character varying(64),
     role character varying(64) DEFAULT 'undefined'::character varying NOT NULL,
-    CONSTRAINT checkconfirmer CHECK (bdproject.sameadminteam(team, admin))
+    CONSTRAINT checkconfirmer CHECK (((admin IS NULL) OR bdproject.sameadminteam(team, admin)))
 );
 
 
@@ -2148,6 +2166,12 @@ Terapia della neuro e psicomotricità dell età evolutiva
 --
 
 COPY bdproject.teamcandidatures (team, applicant, admin, role) FROM stdin;
+Non sono bello ma patcho	straforiniandrea	\N	ah boh
+Non sono bello ma patcho	zazzeraandrea	\N	ah boh
+Non sono bello ma patcho	conteaurora	\N	ah boh
+Non sono bello ma patcho	storacegaetano	\N	ah boh
+Non sono bello ma patcho	contegemma	\N	ah boh
+Non sono bello ma patcho	malattomonica	\N	ah boh
 \.
 
 
@@ -2924,13 +2948,6 @@ CREATE TRIGGER trigger_teamcandidatures_insert AFTER INSERT ON bdproject.teamcan
 --
 
 CREATE TRIGGER trigger_teamcandidatures_update AFTER UPDATE ON bdproject.teamcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_teamcandidatures_update();
-
-
---
--- Name: TRIGGER trigger_teamcandidatures_update ON teamcandidatures; Type: COMMENT; Schema: bdproject; Owner: postgres
---
-
-COMMENT ON TRIGGER trigger_teamcandidatures_update ON bdproject.teamcandidatures IS 'Controlla che l''utente non si confermi da solo.';
 
 
 --
