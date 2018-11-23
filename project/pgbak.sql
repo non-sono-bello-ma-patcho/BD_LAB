@@ -1926,6 +1926,9 @@ COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstat
 24	Park Tennis Club 	2018-11-23	2018-11-22	bauli	open	stefaniniandrea	tennis
 25	Park Tennis Club 	2018-11-23	2018-11-22	bauli	open	stefaniniandrea	tennis
 26	Park Tennis Club 	2018-11-23	2018-11-22	bauli	open	stefaniniandrea	tennis
+27	Palestra Benefit 	2018-12-23	2018-11-23	melegatti	open	conteandrea	calcio
+28	Palestra Benefit 	2018-12-22	2018-11-23	melegatti	open	conteandrea	calcio
+29	Palestra Benefit 	2018-12-21	2018-11-23	melegatti	open	conteandrea	calcio
 \.
 
 
@@ -1933,7 +1936,7 @@ COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstat
 -- Name: matches_id_seq; Type: SEQUENCE SET; Schema: bdproject; Owner: postgres
 --
 
-SELECT pg_catalog.setval('bdproject.matches_id_seq', 26, true);
+SELECT pg_catalog.setval('bdproject.matches_id_seq', 29, true);
 
 
 --
