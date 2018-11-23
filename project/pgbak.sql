@@ -136,6 +136,72 @@ CREATE TYPE bdproject.state AS ENUM (
 ALTER TYPE bdproject.state OWNER TO postgres;
 
 --
+-- Name: aux_competitors(bigint); Type: FUNCTION; Schema: bdproject; Owner: andreo
+--
+
+CREATE FUNCTION bdproject.aux_competitors(id bigint) RETURNS character varying[]
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  return (
+    select team
+    from bdproject.matchcandidatures
+    where match = id
+    and confirmed notnull
+  );
+END;
+$$;
+
+
+ALTER FUNCTION bdproject.aux_competitors(id bigint) OWNER TO andreo;
+
+--
+-- Name: aux_ispremium(character varying); Type: FUNCTION; Schema: bdproject; Owner: andreo
+--
+
+CREATE FUNCTION bdproject.aux_ispremium(character varying) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $_$
+BEGIN
+  return $1 in (select username from bdproject.users where uprivilege = 'premium');
+END;
+$_$;
+
+
+ALTER FUNCTION bdproject.aux_ispremium(character varying) OWNER TO andreo;
+
+--
+-- Name: aux_workinghours(date); Type: FUNCTION; Schema: bdproject; Owner: andreo
+--
+
+CREATE FUNCTION bdproject.aux_workinghours(cdate date) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+declare
+  cmonth integer:= date_trunc('month', (cdate));
+  cyear integer:= date_trunc('year', (cdate));
+  daysnum integer:= (select date_part('days',
+                                      (cyear::text ||'-'|| cmonth::text ||'-01')::date
+                                        + '1 month' :: interval
+                                        - '1 day' :: interval
+                                )
+                    );
+BEGIN
+  return (with days as
+  (
+      select dd, extract(DOW from dd) dw
+      from generate_series((cyear :: text ||'-'|| cmonth :: text ||'-01') :: date,
+                           (cyear :: text ||'-'|| cmonth :: text ||daysnum :: text) :: date, '1 day' :: interval) dd
+  )
+  select * from days where dw not in (6, 0)
+  );
+END;
+$$;
+
+
+ALTER FUNCTION bdproject.aux_workinghours(cdate date) OWNER TO andreo;
+
+--
 -- Name: count_match_played_by_category(character varying, bdproject.sport); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
@@ -1057,35 +1123,24 @@ categoria.min<=numero_giocatori<=categoria.max';
 
 
 --
--- Name: workinghours(date); Type: FUNCTION; Schema: bdproject; Owner: andreo
+-- Name: competitors(bigint); Type: FUNCTION; Schema: public; Owner: andreo
 --
 
-CREATE FUNCTION bdproject.workinghours(cdate date) RETURNS integer
+CREATE FUNCTION public.competitors(id bigint) RETURNS character varying[]
     LANGUAGE plpgsql
     AS $$
-declare
-  cmonth integer:= date_trunc('month', (cdate));
-  cyear integer:= date_trunc('year', (cdate));
-  daysnum integer:= (select date_part('days',
-                                      (cyear::text ||'-'|| cmonth::text ||'-01')::date
-                                        + '1 month' :: interval
-                                        - '1 day' :: interval
-                                )
-                    );
 BEGIN
-  return (with days as
-  (
-      select dd, extract(DOW from dd) dw
-      from generate_series((cyear :: text ||'-'|| cmonth :: text ||'-01') :: date,
-                           (cyear :: text ||'-'|| cmonth :: text ||daysnum :: text) :: date, '1 day' :: interval) dd
-  )
-  select * from days where dw not in (6, 0)
+  return (
+    select team
+    from bdproject.matchcandidatures
+    where match = id
+    and confirmed notnull
   );
 END;
 $$;
 
 
-ALTER FUNCTION bdproject.workinghours(cdate date) OWNER TO andreo;
+ALTER FUNCTION public.competitors(id bigint) OWNER TO andreo;
 
 --
 -- Name: ispremium(character varying); Type: FUNCTION; Schema: public; Owner: andreo
@@ -1661,7 +1716,8 @@ CREATE TABLE bdproject.teams (
     category bdproject.sport NOT NULL,
     description text,
     notes text,
-    admin character varying(64)
+    admin character varying(64),
+    state bdproject.state DEFAULT 'open'::bdproject.state
 );
 
 
@@ -2099,9 +2155,9 @@ COPY bdproject.teamcandidatures (team, applicant, admin, role) FROM stdin;
 -- Data for Name: teams; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.teams (name, coloremaglia, category, description, notes, admin) FROM stdin;
-Non sono bello ma patcho	\N	basket	ci mettiamo impegno	\N	straforiniandrea
-Team1	\N	basket	\N	\N	malattoandrea
+COPY bdproject.teams (name, coloremaglia, category, description, notes, admin, state) FROM stdin;
+Non sono bello ma patcho	\N	basket	ci mettiamo impegno	\N	straforiniandrea	open
+Team1	\N	basket	\N	\N	malattoandrea	open
 \.
 
 
