@@ -2161,17 +2161,14 @@ Terapia della neuro e psicomotricità dell età evolutiva
 --
 
 COPY bdproject.teamcandidatures (team, applicant, admin, role) FROM stdin;
-Non sono bello ma patcho	straforiniandrea	\N	ah boh
-Non sono bello ma patcho	zazzeraandrea	\N	ah boh
-Non sono bello ma patcho	conteaurora	\N	ah boh
-Non sono bello ma patcho	storacegaetano	\N	ah boh
-Non sono bello ma patcho	contegemma	\N	ah boh
-Non sono bello ma patcho	malattomonica	\N	ah boh
-Non sono bello ma patcho	armaninoaurora	\N	undefined
-Non sono bello ma patcho	tascaaurora	\N	undefined
-Non sono bello ma patcho	armaninogaetano	\N	undefined
-Non sono bello ma patcho	campisigaetano	\N	undefined
-Non sono bello ma patcho	sangalettiaurora	\N	undefined
+Non sono bello ma patcho	straforiniandrea	straforiniandrea	ah boh
+Non sono bello ma patcho	zazzeraandrea	straforiniandrea	ah boh
+Non sono bello ma patcho	conteaurora	straforiniandrea	ah boh
+Non sono bello ma patcho	storacegaetano	straforiniandrea	ah boh
+Non sono bello ma patcho	contegemma	straforiniandrea	ah boh
+Non sono bello ma patcho	malattomonica	straforiniandrea	ah boh
+Non sono bello ma patcho	armaninoaurora	straforiniandrea	undefined
+Non sono bello ma patcho	tascaaurora	straforiniandrea	undefined
 Team1	zolezziandrea	malattoandrea	undefined
 Team1	oliveriandrea	malattoandrea	undefined
 Team1	malattoandrea	malattoandrea	undefined
@@ -2179,15 +2176,8 @@ Team1	polveriniandrea	malattoandrea	undefined
 Team1	stefaniniandrea	malattoandrea	undefined
 Team1	tavellaandrea	malattoandrea	undefined
 Team1	scipioniandrea	malattoandrea	undefined
-Non sono bello ma patcho	basileaurora	\N	undefined
-Non sono bello ma patcho	simoniaurora	\N	undefined
-Non sono bello ma patcho	storaceaurora	\N	undefined
-Non sono bello ma patcho	zazzeraaurora	\N	undefined
-Non sono bello ma patcho	saperdiaurora	\N	undefined
-Non sono bello ma patcho	tascagaetano	\N	undefined
-Non sono bello ma patcho	napolitanoaurora	\N	undefined
-Non sono bello ma patcho	polveriniaurora	\N	undefined
-Non sono bello ma patcho	scottigaetano	\N	undefined
+Non sono bello ma patcho	armaninogaetano	straforiniandrea	undefined
+Non sono bello ma patcho	campisigaetano	straforiniandrea	undefined
 \.
 
 
