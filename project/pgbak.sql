@@ -239,9 +239,11 @@ CREATE FUNCTION bdproject.count_player(teamname character varying) RETURNS numer
     LANGUAGE plpgsql
     AS $$
 begin
+	return (
 	select count(*)
 	from TeamCandidatures
-	where teamcandidatures.team = teamName and teamcandidatures.admin is not null and teamcandidatures.role='player';
+	where teamcandidatures.team = teamName and teamcandidatures.admin is not null and teamcandidatures.role='player'
+			);
 end;
 $$;
 
@@ -1031,10 +1033,10 @@ $_$;
 ALTER FUNCTION bdproject.sameadmintournaments(character varying, character varying) OWNER TO postgres;
 
 --
--- Name: team_full(character varying); Type: FUNCTION; Schema: bdproject; Owner: postgres
+-- Name: team_full(character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.team_full("TeamName" character varying) RETURNS boolean
+CREATE FUNCTION bdproject.team_full(teamname character varying) RETURNS boolean
     LANGUAGE plpgsql
     AS $$
 begin
@@ -1048,14 +1050,7 @@ end;
 $$;
 
 
-ALTER FUNCTION bdproject.team_full("TeamName" character varying) OWNER TO postgres;
-
---
--- Name: FUNCTION team_full("TeamName" character varying); Type: COMMENT; Schema: bdproject; Owner: postgres
---
-
-COMMENT ON FUNCTION bdproject.team_full("TeamName" character varying) IS 'restituisce true se il numero di giocatori è uguale al massimo consentito dalla categoria.';
-
+ALTER FUNCTION bdproject.team_full(teamname character varying) OWNER TO strafo;
 
 --
 -- Name: team_min(character varying); Type: FUNCTION; Schema: bdproject; Owner: postgres
@@ -2166,12 +2161,19 @@ Terapia della neuro e psicomotricità dell età evolutiva
 --
 
 COPY bdproject.teamcandidatures (team, applicant, admin, role) FROM stdin;
-Non sono bello ma patcho	straforiniandrea	\N	ah boh
-Non sono bello ma patcho	zazzeraandrea	\N	ah boh
-Non sono bello ma patcho	conteaurora	\N	ah boh
-Non sono bello ma patcho	storacegaetano	\N	ah boh
-Non sono bello ma patcho	contegemma	\N	ah boh
-Non sono bello ma patcho	malattomonica	\N	ah boh
+Non sono bello ma patcho	straforiniandrea	straforiniandrea	ah boh
+Non sono bello ma patcho	zazzeraandrea	straforiniandrea	ah boh
+Non sono bello ma patcho	conteaurora	straforiniandrea	ah boh
+Non sono bello ma patcho	storacegaetano	straforiniandrea	ah boh
+Non sono bello ma patcho	contegemma	straforiniandrea	ah boh
+Non sono bello ma patcho	malattomonica	straforiniandrea	ah boh
+Team1	zolezziandrea	malattoandrea	undefined
+Team1	oliveriandrea	malattoandrea	undefined
+Team1	malattoandrea	malattoandrea	undefined
+Team1	polveriniandrea	malattoandrea	undefined
+Team1	stefaniniandrea	malattoandrea	undefined
+Team1	tavellaandrea	malattoandrea	undefined
+Team1	scipioniandrea	malattoandrea	undefined
 \.
 
 
