@@ -761,8 +761,14 @@ begin
     insert into matchcandidatures values(teamname1,new.id,NULL);
     insert into matchcandidatures values(teamname2,new.id,NULL);
   else
-    raise exception 'Le partite del torneo vengono inserite automaticamente';
-    end if ;
+      if((select ttype from tournaments where tournaments.name=new.tournament)='misto')then
+        if(not sameadmintournaments(new.tournament,new.admin)) then
+          raise exception 'L''admin % del match non corrisponde al manager del torneo % associato.',new.admin,new.tournament;
+        end if;
+      else
+          raise exception 'Le partite del torneo vengono inserite automaticamente';
+      end if;
+  end if ;
 	return new;
 end;
 $$;
@@ -890,6 +896,51 @@ $$;
 
 
 ALTER FUNCTION bdproject.proc_trigger_teamcandidatures_update() OWNER TO postgres;
+
+--
+-- Name: proc_trigger_tournaments_insert(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.proc_trigger_tournaments_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+declare
+  i int;
+  numberOfMatch int=0;
+  matchName varchar(64);
+  livello int ;
+begin
+
+if(new.tournamentsteams is not null) then raise exception 'Aggiungere le squadre successivamente tramite update.';end if ;
+if(new.ttype='italiana')then
+    if(new.teamsNumber<3)then raise exception 'Impossibile creare il torneo; il numero di squadre non è una potenza di 2.';end if;
+    numberOfMatch:=new.teamsnumber*(new.teamsnumber-1)/2;
+
+  else if(new.ttype='eliminazione diretta')then
+        if(mod(new.teamsNumber,2)!=0 or new.teamsNumber<4)then raise exception 'Impossibile creare il torneo; il numero di squadre non è una potenza di 2.';end if;
+        livello:=log(2,new.teamsnumber)-1;
+        while(livello>=0) loop
+          numberOfMatch:=numberOfMatch+power(2,livello);
+          livello:=livello-1;
+        end loop;
+      else--eliminazione mista
+        --gestito manualmente dall'utente
+        --il trigger match insert permette l'inserimento manuale per questa tipologia di torneo
+      end if;
+end if;
+i:=1;
+while (i<=numberOfMatch) loop
+  matchName:=concat(new.name,'_match_');
+  matchName:=concat(matchName, i::text );
+  insert into matches (id,building, organizedon, tournament, admin, category) VALUES
+                      (matchName,null,current_date,new.name,new.manager,new.category);
+end loop;
+
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.proc_trigger_tournaments_insert() OWNER TO strafo;
 
 --
 -- Name: referee_assigned(bigint); Type: FUNCTION; Schema: bdproject; Owner: postgres
@@ -1794,6 +1845,7 @@ CREATE TABLE bdproject.tournaments (
     manager character varying(64) NOT NULL,
     tournamentsteams bdproject.teams[],
     teamsnumber integer DEFAULT 2 NOT NULL,
+    category bdproject.categories NOT NULL,
     CONSTRAINT manager_premium CHECK (public.ispremium(manager))
 );
 
@@ -2226,16 +2278,7 @@ Non sono bello ma patcho	\N	basket	ci mettiamo impegno	\N	straforiniandrea	close
 -- Data for Name: tournaments; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber) FROM stdin;
-salame	italiana	zazzeraandrea	\N	2
-prosciutto	italiana	zazzeraandrea	\N	2
-bresaola	italiana	zazzeraandrea	\N	2
-mortadella	italiana	zazzeraandrea	\N	2
-speck	italiana	zazzeraandrea	\N	2
-testaincassetta	italiana	zazzeraandrea	\N	2
-pancetta	italiana	zazzeraandrea	\N	2
-coppa	italiana	zazzeraandrea	\N	2
-lardo	italiana	zazzeraandrea	\N	2
+COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber, category) FROM stdin;
 \.
 
 
@@ -2986,6 +3029,20 @@ CREATE TRIGGER trigger_teamcandidatures_insert AFTER INSERT ON bdproject.teamcan
 --
 
 CREATE TRIGGER trigger_teamcandidatures_update AFTER UPDATE ON bdproject.teamcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_teamcandidatures_update();
+
+
+--
+-- Name: tournaments trigger_tournaments_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_tournaments_insert AFTER INSERT ON bdproject.tournaments FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_tournaments_insert();
+
+
+--
+-- Name: TRIGGER trigger_tournaments_insert ON tournaments; Type: COMMENT; Schema: bdproject; Owner: postgres
+--
+
+COMMENT ON TRIGGER trigger_tournaments_insert ON bdproject.tournaments IS 'Crea automaticamnte le partite per tutti i tipi di toneo meno quello misto.Controlla inoltre che il numero di squadre sia sufficente.';
 
 
 --
