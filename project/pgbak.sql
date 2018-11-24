@@ -761,7 +761,6 @@ begin
     insert into matchcandidatures values(teamname1,new.id,NULL);
     insert into matchcandidatures values(teamname2,new.id,NULL);
   else
-    if(not sameadmintournaments(new.tournament,new.admin)) then raise exception 'Admin match diverso da admin torneo.';end if;
     raise exception 'Le partite del torneo vengono inserite automaticamente';
     end if ;
 	return new;
@@ -2037,7 +2036,7 @@ COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstat
 -- Name: matches_id_seq; Type: SEQUENCE SET; Schema: bdproject; Owner: postgres
 --
 
-SELECT pg_catalog.setval('bdproject.matches_id_seq', 29, true);
+SELECT pg_catalog.setval('bdproject.matches_id_seq', 30, true);
 
 
 --
@@ -2228,6 +2227,15 @@ Non sono bello ma patcho	\N	basket	ci mettiamo impegno	\N	straforiniandrea	close
 --
 
 COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber) FROM stdin;
+salame	italiana	zazzeraandrea	\N	2
+prosciutto	italiana	zazzeraandrea	\N	2
+bresaola	italiana	zazzeraandrea	\N	2
+mortadella	italiana	zazzeraandrea	\N	2
+speck	italiana	zazzeraandrea	\N	2
+testaincassetta	italiana	zazzeraandrea	\N	2
+pancetta	italiana	zazzeraandrea	\N	2
+coppa	italiana	zazzeraandrea	\N	2
+lardo	italiana	zazzeraandrea	\N	2
 \.
 
 
