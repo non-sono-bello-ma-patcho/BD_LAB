@@ -756,15 +756,14 @@ begin
   if(new.tournament is NULL) then
     teamname1:=concat(new.id,'_1');
     teamname2:=concat(new.id,'_2');
-    insert into teams values(teamname1,NULL,new.category,NULL,NULL,new.admin);
-    insert into teams values(teamname2,NULL,new.category,NULL,NULL,new.admin);
+    insert into teams values(teamname1,NULL,new.category,NULL,NULL,new.admin,'open');
+    insert into teams values(teamname2,NULL,new.category,NULL,NULL,new.admin,'open');
     insert into matchcandidatures values(teamname1,new.id,NULL);
     insert into matchcandidatures values(teamname2,new.id,NULL);
   else
-    if(not sameadmintournaments(new.tournament,new.admin)) then
-      raise exception 'Admin match diverso da admin torneo.';
-    end if;
-  end if;
+    if(not sameadmintournaments(new.tournament,new.admin)) then raise exception 'Admin match diverso da admin torneo.';end if;
+    raise exception 'Le partite del torneo vengono inserite automaticamente';
+    end if ;
 	return new;
 end;
 $$;
@@ -1392,6 +1391,53 @@ COMMENT ON TABLE bdproject.categories IS 'categorie di sport';
 
 
 --
+-- Name: teamcandidatures; Type: TABLE; Schema: bdproject; Owner: postgres
+--
+
+CREATE TABLE bdproject.teamcandidatures (
+    team character varying(64) NOT NULL,
+    applicant character varying NOT NULL,
+    admin character varying(64),
+    role character varying(64) DEFAULT 'undefined'::character varying NOT NULL,
+    CONSTRAINT checkconfirmer CHECK (((admin IS NULL) OR bdproject.sameadminteam(team, admin)))
+);
+
+
+ALTER TABLE bdproject.teamcandidatures OWNER TO postgres;
+
+--
+-- Name: teams; Type: TABLE; Schema: bdproject; Owner: postgres
+--
+
+CREATE TABLE bdproject.teams (
+    name character varying(64) NOT NULL,
+    coloremaglia character varying(32),
+    category bdproject.sport NOT NULL,
+    description text,
+    notes text,
+    admin character varying(64),
+    state bdproject.state DEFAULT 'open'::bdproject.state
+);
+
+
+ALTER TABLE bdproject.teams OWNER TO postgres;
+
+--
+-- Name: compositions; Type: VIEW; Schema: bdproject; Owner: andreo
+--
+
+CREATE VIEW bdproject.compositions AS
+ SELECT teamcandidatures.team,
+    teamcandidatures.applicant AS player,
+    teamcandidatures.role
+   FROM (bdproject.teamcandidatures
+     JOIN bdproject.teams t ON (((teamcandidatures.team)::text = (t.name)::text)))
+  WHERE ((t.state = 'closed'::bdproject.state) AND (teamcandidatures.admin IS NOT NULL));
+
+
+ALTER TABLE bdproject.compositions OWNER TO andreo;
+
+--
 -- Name: evaluations; Type: TABLE; Schema: bdproject; Owner: postgres
 --
 
@@ -1738,38 +1784,6 @@ CREATE TABLE bdproject.studycourses (
 
 
 ALTER TABLE bdproject.studycourses OWNER TO postgres;
-
---
--- Name: teamcandidatures; Type: TABLE; Schema: bdproject; Owner: postgres
---
-
-CREATE TABLE bdproject.teamcandidatures (
-    team character varying(64) NOT NULL,
-    applicant character varying NOT NULL,
-    admin character varying(64),
-    role character varying(64) DEFAULT 'undefined'::character varying NOT NULL,
-    CONSTRAINT checkconfirmer CHECK (((admin IS NULL) OR bdproject.sameadminteam(team, admin)))
-);
-
-
-ALTER TABLE bdproject.teamcandidatures OWNER TO postgres;
-
---
--- Name: teams; Type: TABLE; Schema: bdproject; Owner: postgres
---
-
-CREATE TABLE bdproject.teams (
-    name character varying(64) NOT NULL,
-    coloremaglia character varying(32),
-    category bdproject.sport NOT NULL,
-    description text,
-    notes text,
-    admin character varying(64),
-    state bdproject.state DEFAULT 'open'::bdproject.state
-);
-
-
-ALTER TABLE bdproject.teams OWNER TO postgres;
 
 --
 -- Name: tournaments; Type: TABLE; Schema: bdproject; Owner: postgres
@@ -2204,8 +2218,8 @@ Non sono bello ma patcho	campisigaetano	straforiniandrea	undefined
 --
 
 COPY bdproject.teams (name, coloremaglia, category, description, notes, admin, state) FROM stdin;
-Non sono bello ma patcho	\N	basket	ci mettiamo impegno	\N	straforiniandrea	open
-Team1	\N	basket	\N	\N	malattoandrea	open
+Team1	\N	basket	\N	\N	malattoandrea	closed
+Non sono bello ma patcho	\N	basket	ci mettiamo impegno	\N	straforiniandrea	closed
 \.
 
 
