@@ -1053,6 +1053,21 @@ $$;
 ALTER FUNCTION bdproject.team_full(teamname character varying) OWNER TO strafo;
 
 --
+-- Name: team_is_registered_tournament(character varying, character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.team_is_registered_tournament(team character varying, tournament character varying) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+begin
+	return team<@(select from tournaments where tournaments.name=tournament);
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.team_is_registered_tournament(team character varying, tournament character varying) OWNER TO strafo;
+
+--
 -- Name: team_min(character varying); Type: FUNCTION; Schema: bdproject; Owner: postgres
 --
 
@@ -1078,6 +1093,26 @@ ALTER FUNCTION bdproject.team_min(teamname character varying) OWNER TO postgres;
 
 COMMENT ON FUNCTION bdproject.team_min(teamname character varying) IS 'verifica che i giocatori di una squadra siano almeno il minimo specificato dalla categoria';
 
+
+--
+-- Name: tournament_full(character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.tournament_full(tournament character varying) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+begin
+	return array_length(tournament,1) >
+	(
+		select tournaments.teamsnumber
+		from tournaments
+    where name=tournament
+	);
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.tournament_full(tournament character varying) OWNER TO strafo;
 
 --
 -- Name: valid_team(character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
@@ -1744,6 +1779,8 @@ CREATE TABLE bdproject.tournaments (
     name character varying(64) NOT NULL,
     ttype bdproject.girone DEFAULT 'italiana'::bdproject.girone NOT NULL,
     manager character varying(64) NOT NULL,
+    tournamentsteams bdproject.teams[],
+    teamsnumber integer DEFAULT 2 NOT NULL,
     CONSTRAINT manager_premium CHECK (public.ispremium(manager))
 );
 
@@ -1979,25 +2016,6 @@ SELECT pg_catalog.setval('bdproject.matchcandidatures_match_seq', 1, false);
 --
 
 COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category) FROM stdin;
-11	Park Tennis Club 	2018-11-23	2018-11-22	motta	open	gentiloniandrea	tennis
-12	Park Tennis Club 	2018-11-23	2018-11-22	motta	open	gentiloniandrea	tennis
-13	Park Tennis Club 	2018-11-23	2018-11-22	motta	open	gentiloniandrea	tennis
-14	Park Tennis Club 	2018-11-23	2018-11-22	motta	open	gentiloniandrea	tennis
-15	Park Tennis Club 	2018-11-23	2018-11-22	motta	open	gentiloniandrea	tennis
-16	Park Tennis Club 	2018-12-23	2018-11-22	motta	open	gentiloniandrea	tennis
-17	Park Tennis Club 	2018-12-23	2018-11-22	motta	open	gentiloniandrea	tennis
-18	Park Tennis Club 	2018-12-23	2018-11-22	motta	open	gentiloniandrea	tennis
-19	Park Tennis Club 	2018-12-23	2018-11-22	motta	open	gentiloniandrea	tennis
-20	Park Tennis Club 	2018-12-23	2018-11-22	motta	open	gentiloniandrea	tennis
-21	Park Tennis Club 	2018-12-23	2018-11-22	varano	open	zazzeraandrea	tennis
-22	Park Tennis Club 	2018-12-23	2018-11-22	varano	open	zazzeraandrea	tennis
-23	Park Tennis Club 	2018-12-23	2018-11-22	varano	open	zazzeraandrea	tennis
-24	Park Tennis Club 	2018-11-23	2018-11-22	bauli	open	stefaniniandrea	tennis
-25	Park Tennis Club 	2018-11-23	2018-11-22	bauli	open	stefaniniandrea	tennis
-26	Park Tennis Club 	2018-11-23	2018-11-22	bauli	open	stefaniniandrea	tennis
-27	Palestra Benefit 	2018-12-23	2018-11-23	melegatti	open	conteandrea	calcio
-28	Palestra Benefit 	2018-12-22	2018-11-23	melegatti	open	conteandrea	calcio
-29	Palestra Benefit 	2018-12-21	2018-11-23	melegatti	open	conteandrea	calcio
 \.
 
 
@@ -2195,15 +2213,7 @@ Team1	\N	basket	\N	\N	malattoandrea	open
 -- Data for Name: tournaments; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.tournaments (name, ttype, manager) FROM stdin;
-varano	italiana	zazzeraandrea
-bauli	italiana	stefaniniandrea
-melegatti	italiana	conteandrea
-balocco	italiana	scottiadriana
-motta	italiana	gentiloniandrea
-lindt	italiana	oliveriaurora
-novi	italiana	zolezzialberto
-caffarel	italiana	pannellaaurora
+COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber) FROM stdin;
 \.
 
 
