@@ -2261,6 +2261,15 @@ Team1	tavellaandrea	malattoandrea	undefined
 Team1	scipioniandrea	malattoandrea	undefined
 Non sono bello ma patcho	armaninogaetano	straforiniandrea	undefined
 Non sono bello ma patcho	campisigaetano	straforiniandrea	undefined
+squadra1	straforiniandrea	\N	role1
+squadra1	simoniandrea	\N	role1
+squadra1	campisiandrea	\N	role1
+squadra1	basileandrea	\N	role1
+squadra1	tascaandrea	\N	role1
+squadra1	gardellaandrea	\N	role1
+squadra2	scipioniandrea	\N	role1
+squadra2	pannellaandrea	\N	role1
+squadra2	ferrariandrea	\N	role1
 \.
 
 
@@ -2271,6 +2280,8 @@ Non sono bello ma patcho	campisigaetano	straforiniandrea	undefined
 COPY bdproject.teams (name, coloremaglia, category, description, notes, admin, state) FROM stdin;
 Team1	\N	basket	\N	\N	malattoandrea	closed
 Non sono bello ma patcho	\N	basket	ci mettiamo impegno	\N	straforiniandrea	closed
+squadra1	blu	tennis	team1desc	team1notes	zazzeraandrea	closed
+squadra2	rosso	tennis	team2desc	team2notes	armaninoandrea	open
 \.
 
 
