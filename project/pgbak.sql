@@ -2088,7 +2088,7 @@ COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstat
 -- Name: matches_id_seq; Type: SEQUENCE SET; Schema: bdproject; Owner: postgres
 --
 
-SELECT pg_catalog.setval('bdproject.matches_id_seq', 30, true);
+SELECT pg_catalog.setval('bdproject.matches_id_seq', 31, true);
 
 
 --
