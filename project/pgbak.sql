@@ -1790,6 +1790,57 @@ ALTER SEQUENCE bdproject.posts_photo_seq OWNED BY bdproject.posts.photo;
 
 
 --
+-- Name: users; Type: TABLE; Schema: bdproject; Owner: postgres
+--
+
+CREATE TABLE bdproject.users (
+    username character varying(64) NOT NULL,
+    password character varying(64),
+    name character varying(64) NOT NULL,
+    surname character varying(64) NOT NULL,
+    birthdate date NOT NULL,
+    birthplace character varying(64) NOT NULL,
+    photo bigint,
+    regnumber integer NOT NULL,
+    uprivilege bdproject.privilege DEFAULT 'base'::bdproject.privilege NOT NULL,
+    studycourse character varying(64) NOT NULL,
+    tennismatch numeric DEFAULT 0 NOT NULL,
+    volleymatch numeric DEFAULT 0 NOT NULL,
+    soccermatch numeric DEFAULT 0 NOT NULL,
+    phonenumber character varying(10),
+    basketmatch numeric DEFAULT 0 NOT NULL,
+    gender bdproject.gender DEFAULT 'non definito'::bdproject.gender NOT NULL
+);
+
+
+ALTER TABLE bdproject.users OWNER TO postgres;
+
+--
+-- Name: program; Type: VIEW; Schema: bdproject; Owner: andreo
+--
+
+CREATE VIEW bdproject.program AS
+ SELECT matches.building,
+    date_part('month'::text, matches.organizedon) AS cmonth,
+    matches.category,
+    count(DISTINCT matches.tournament) AS tournaments,
+    count(matches.id) AS matches,
+    count(c.player) AS participants,
+    count(DISTINCT u.studycourse) AS cs,
+    sum((outcomes.duration)::interval) AS totalduration,
+    (sum((outcomes.duration)::interval) / (avg(((date_part('hour'::text, (buildings.closure - buildings.opening)))::integer * bdproject.aux_workinghours(matches.organizedon))))::double precision) AS usagepercentage
+   FROM (((((bdproject.matches
+     LEFT JOIN bdproject.matchcandidatures mc ON ((matches.id = mc.match)))
+     LEFT JOIN bdproject.compositions c ON (((mc.team)::text = (c.team)::text)))
+     LEFT JOIN bdproject.users u ON (((c.player)::text = (u.username)::text)))
+     LEFT JOIN bdproject.outcomes ON ((matches.id = outcomes.match)))
+     LEFT JOIN bdproject.buildings ON (((matches.building)::text = (buildings.name)::text)))
+  GROUP BY matches.building, (date_part('month'::text, matches.organizedon)), matches.category;
+
+
+ALTER TABLE bdproject.program OWNER TO andreo;
+
+--
 -- Name: refereecandidatures; Type: TABLE; Schema: bdproject; Owner: postgres
 --
 
@@ -1851,32 +1902,6 @@ CREATE TABLE bdproject.tournaments (
 
 
 ALTER TABLE bdproject.tournaments OWNER TO postgres;
-
---
--- Name: users; Type: TABLE; Schema: bdproject; Owner: postgres
---
-
-CREATE TABLE bdproject.users (
-    username character varying(64) NOT NULL,
-    password character varying(64),
-    name character varying(64) NOT NULL,
-    surname character varying(64) NOT NULL,
-    birthdate date NOT NULL,
-    birthplace character varying(64) NOT NULL,
-    photo bigint,
-    regnumber integer NOT NULL,
-    uprivilege bdproject.privilege DEFAULT 'base'::bdproject.privilege NOT NULL,
-    studycourse character varying(64) NOT NULL,
-    tennismatch numeric DEFAULT 0 NOT NULL,
-    volleymatch numeric DEFAULT 0 NOT NULL,
-    soccermatch numeric DEFAULT 0 NOT NULL,
-    phonenumber character varying(10),
-    basketmatch numeric DEFAULT 0 NOT NULL,
-    gender bdproject.gender DEFAULT 'non definito'::bdproject.gender NOT NULL
-);
-
-
-ALTER TABLE bdproject.users OWNER TO postgres;
 
 --
 -- Name: users_photo_seq; Type: SEQUENCE; Schema: bdproject; Owner: postgres
