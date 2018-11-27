@@ -171,6 +171,49 @@ $_$;
 ALTER FUNCTION bdproject.aux_ispremium(character varying) OWNER TO andreo;
 
 --
+-- Name: aux_referee(bigint); Type: FUNCTION; Schema: bdproject; Owner: andreo
+--
+
+CREATE FUNCTION bdproject.aux_referee(bigint) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $_$
+BEGIN
+  return (
+    select applicant
+    from matches
+    left outer join refereecandidatures r on matches.id = r.match
+    where id = $1 and confirmed notnull 
+  );
+END;
+$_$;
+
+
+ALTER FUNCTION bdproject.aux_referee(bigint) OWNER TO andreo;
+
+--
+-- Name: aux_samecat(bigint, character varying); Type: FUNCTION; Schema: bdproject; Owner: andreo
+--
+
+CREATE FUNCTION bdproject.aux_samecat(m bigint, t character varying) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  return(
+    select category
+    from matches
+    where id = m
+  ) = (
+    select category
+    from teams
+    where name = t
+  );
+END;
+$$;
+
+
+ALTER FUNCTION bdproject.aux_samecat(m bigint, t character varying) OWNER TO andreo;
+
+--
 -- Name: aux_workinghours(date); Type: FUNCTION; Schema: bdproject; Owner: andreo
 --
 
@@ -907,7 +950,6 @@ CREATE FUNCTION bdproject.proc_trigger_tournaments_insert() RETURNS trigger
 declare
   i int;
   numberOfMatch int=0;
-  matchName varchar(64);
   livello int ;
 begin
 
@@ -930,10 +972,8 @@ if(new.ttype='italiana')then
 end if;
 i:=1;
 while (i<=numberOfMatch) loop
-  matchName:=concat(new.name,'_match_');
-  matchName:=concat(matchName, i::text );
   insert into matches (id,building, organizedon, tournament, admin, category) VALUES
-                      (matchName,null,current_date,new.name,new.manager,new.category);
+                      (default,null,current_date,new.name,new.manager,new.category);
 end loop;
 
 end;
@@ -1202,6 +1242,26 @@ categoria.min<=numero_giocatori<=categoria.max';
 
 
 --
+-- Name: aux_referee(bigint); Type: FUNCTION; Schema: public; Owner: andreo
+--
+
+CREATE FUNCTION public.aux_referee(bigint) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $_$
+BEGIN
+  return (
+    select applicant
+    from matches
+    left outer join refereecandidatures r on matches.id = r.match
+    where id = $1 and confirmed notnull 
+  );
+END;
+$_$;
+
+
+ALTER FUNCTION public.aux_referee(bigint) OWNER TO andreo;
+
+--
 -- Name: competitors(bigint); Type: FUNCTION; Schema: public; Owner: andreo
 --
 
@@ -1329,6 +1389,48 @@ $$;
 
 
 ALTER FUNCTION public.proc_trigger_teamcandidatures_insert() OWNER TO andreo;
+
+--
+-- Name: proc_trigger_tournaments_insert(); Type: FUNCTION; Schema: public; Owner: andreo
+--
+
+CREATE FUNCTION public.proc_trigger_tournaments_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+declare
+  i int;
+  numberOfMatch int=0;
+  livello int ;
+begin
+
+if(new.tournamentsteams is not null) then raise exception 'Aggiungere le squadre successivamente tramite update.';end if ;
+if(new.ttype='italiana')then
+    if(new.teamsNumber<3)then raise exception 'Impossibile creare il torneo; il numero di squadre non è una potenza di 2.';end if;
+    numberOfMatch:=new.teamsnumber*(new.teamsnumber-1)/2;
+
+  else if(new.ttype='eliminazione diretta')then
+        if(mod(new.teamsNumber,2)!=0 or new.teamsNumber<4)then raise exception 'Impossibile creare il torneo; il numero di squadre non è una potenza di 2.';end if;
+        livello:=log(2,new.teamsnumber)-1;
+        while(livello>=0) loop
+          numberOfMatch:=numberOfMatch+power(2,livello);
+          livello:=livello-1;
+        end loop;
+      else--eliminazione mista
+        --gestito manualmente dall'utente
+        --il trigger match insert permette l'inserimento manuale per questa tipologia di torneo
+      end if;
+end if;
+i:=1;
+while (i<=numberOfMatch) loop
+  insert into matches (id,building, organizedon, tournament, admin, category) VALUES
+                      (default,null,current_date,new.name,new.manager,new.category);
+end loop;
+
+end;
+$$;
+
+
+ALTER FUNCTION public.proc_trigger_tournaments_insert() OWNER TO andreo;
 
 --
 -- Name: sameadminmatch(bigint, character varying); Type: FUNCTION; Schema: public; Owner: andreo
@@ -1466,7 +1568,7 @@ CREATE TABLE bdproject.teams (
     description text,
     notes text,
     admin character varying(64),
-    state bdproject.state DEFAULT 'open'::bdproject.state
+    state bdproject.state DEFAULT 'open'::bdproject.state NOT NULL
 );
 
 
@@ -1568,7 +1670,8 @@ CREATE TABLE bdproject.matchcandidatures (
     team character varying(64) NOT NULL,
     match bigint NOT NULL,
     confirmed character varying(64),
-    CONSTRAINT checkconfirmer CHECK (bdproject.sameadminmatch(match, confirmed))
+    CONSTRAINT checkconfirmer CHECK (bdproject.sameadminmatch(match, confirmed)),
+    CONSTRAINT same_category CHECK (bdproject.aux_samecat(match, team))
 );
 
 
@@ -1607,7 +1710,8 @@ CREATE TABLE bdproject.matches (
     tournament character varying(64),
     mstate bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
     admin character varying(64) NOT NULL,
-    category bdproject.sport NOT NULL
+    category bdproject.sport NOT NULL,
+    phase integer
 );
 
 
@@ -1887,6 +1991,25 @@ CREATE TABLE bdproject.studycourses (
 ALTER TABLE bdproject.studycourses OWNER TO postgres;
 
 --
+-- Name: tournamentprogram; Type: VIEW; Schema: bdproject; Owner: andreo
+--
+
+CREATE VIEW bdproject.tournamentprogram AS
+ SELECT matches.tournament,
+    matches.building,
+    matches.organizedon,
+    matches.id,
+    bdproject.aux_competitors(matches.id) AS competitors,
+    bdproject.aux_referee(matches.id) AS referee,
+    matches.phase,
+    (((outcomes.winteam1)::text || ' a '::text) || (outcomes.winteam2)::text) AS outcomes
+   FROM (bdproject.matches
+     LEFT JOIN bdproject.outcomes ON ((matches.id = outcomes.match)));
+
+
+ALTER TABLE bdproject.tournamentprogram OWNER TO andreo;
+
+--
 -- Name: tournaments; Type: TABLE; Schema: bdproject; Owner: postgres
 --
 
@@ -1894,10 +2017,10 @@ CREATE TABLE bdproject.tournaments (
     name character varying(64) NOT NULL,
     ttype bdproject.girone DEFAULT 'italiana'::bdproject.girone NOT NULL,
     manager character varying(64) NOT NULL,
-    tournamentsteams bdproject.teams[],
+    tournamentsteams character varying(64)[],
     teamsnumber integer DEFAULT 2 NOT NULL,
-    category bdproject.categories NOT NULL,
     state bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
+    category bdproject.sport,
     CONSTRAINT manager_premium CHECK (public.ispremium(manager))
 );
 
@@ -2106,7 +2229,7 @@ SELECT pg_catalog.setval('bdproject.matchcandidatures_match_seq', 1, false);
 -- Data for Name: matches; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category) FROM stdin;
+COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category, phase) FROM stdin;
 \.
 
 
@@ -2318,7 +2441,7 @@ squadra2	rosso	tennis	team2desc	team2notes	armaninoandrea	open
 -- Data for Name: tournaments; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber, category, state) FROM stdin;
+COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber, state, category) FROM stdin;
 \.
 
 
@@ -3315,6 +3438,14 @@ ALTER TABLE ONLY bdproject.teams
 
 ALTER TABLE ONLY bdproject.teams
     ADD CONSTRAINT teams_categories_name_fk FOREIGN KEY (category) REFERENCES bdproject.categories(name);
+
+
+--
+-- Name: tournaments tournaments_categories_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
+--
+
+ALTER TABLE ONLY bdproject.tournaments
+    ADD CONSTRAINT tournaments_categories_name_fk FOREIGN KEY (category) REFERENCES bdproject.categories(name);
 
 
 --
