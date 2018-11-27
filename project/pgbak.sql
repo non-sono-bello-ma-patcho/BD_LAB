@@ -1897,6 +1897,7 @@ CREATE TABLE bdproject.tournaments (
     tournamentsteams bdproject.teams[],
     teamsnumber integer DEFAULT 2 NOT NULL,
     category bdproject.categories NOT NULL,
+    state bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
     CONSTRAINT manager_premium CHECK (public.ispremium(manager))
 );
 
@@ -2295,6 +2296,9 @@ squadra1	gardellaandrea	\N	role1
 squadra2	scipioniandrea	\N	role1
 squadra2	pannellaandrea	\N	role1
 squadra2	ferrariandrea	\N	role1
+squadra2	scottiandrea	\N	role1
+squadra2	storaceandrea	\N	role1
+squadra2	paganiandrea	\N	role1
 \.
 
 
@@ -2314,7 +2318,7 @@ squadra2	rosso	tennis	team2desc	team2notes	armaninoandrea	open
 -- Data for Name: tournaments; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber, category) FROM stdin;
+COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber, category, state) FROM stdin;
 \.
 
 
