@@ -2422,6 +2422,10 @@ squadra2	ferrariandrea	\N	role1
 squadra2	scottiandrea	\N	role1
 squadra2	storaceandrea	\N	role1
 squadra2	paganiandrea	\N	role1
+Non sono bello ma patcho	polveriniadriana	\N	player
+Non sono bello ma patcho	straforinigemma	\N	player
+Non sono bello ma patcho	simoniandrea	\N	player
+Non sono bello ma patcho	armaninoadamo	\N	player
 \.
 
 
