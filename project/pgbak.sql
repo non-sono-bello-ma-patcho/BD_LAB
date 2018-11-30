@@ -859,7 +859,6 @@ CREATE FUNCTION bdproject.proc_trigger_outcomes_insert_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 declare
-	datediff integer;
 	cursorePartecipanti cursor is
 			select applicant
 			from matchcandidatures inner join teamcandidatures on matchcandidatures.team=teamcandidatures.team
@@ -868,6 +867,9 @@ declare
 
 begin
 	--esiste la partita in questione? sì perchè match è chiave primaria sulla tabella match--
+
+	--stessa categoria?
+	  --TO BE DONE
 
 	--l'admin che la conferma è quello giusto?--
 	if(not sameadminmatch(new.match,new.admin)) then
@@ -880,15 +882,14 @@ begin
 		'Impossibile inserire esito partita(partita ancora aperta).';
 	end if;
 	--la data di inserimeto è congruente con quella del match?--
-	select datediff(day,(select organizedon from matches),new.insertedon) into datediff;
-	if(datediff<0)then
+	if(date_cmp(new.insertedon,(select organizedon from matches where matches.id=new.match))<0)then
 		raise exception
 		'Impossibile inserire esito partita(data inserimento precedente all data della partita).';
 	end if;
 	select category from matches where matches.id=new.match into categoria;
 	for  partecipante in cursorePartecipanti
 	loop
-		execute incrementapartitegiocateutente(categoria,partecipante);
+		execute incrementapartitegiocateutente(cast(new.otype as bdproject.sport),partecipante);
 	end loop;
 	return new;
 end;
