@@ -869,8 +869,8 @@ begin
 	--esiste la partita in questione? sì perchè match è chiave primaria sulla tabella match--
 
 	--stessa categoria?
-	  --TO BE DONE
-
+	select category from matches where matches.id=new.match into categoria;
+	if(new.otype<>categoria)then raise exception 'Categoria dell''esito diversa dalla categoria del match: % % .',new.otype,categoria;end if;
 	--l'admin che la conferma è quello giusto?--
 	if(not sameadminmatch(new.match,new.admin)) then
 		raise exception
@@ -886,10 +886,9 @@ begin
 		raise exception
 		'Impossibile inserire esito partita(data inserimento precedente all data della partita).';
 	end if;
-	select category from matches where matches.id=new.match into categoria;
 	for  partecipante in cursorePartecipanti
 	loop
-		execute incrementapartitegiocateutente(cast(new.otype as bdproject.sport),partecipante);
+		execute incrementapartitegiocateutente(categoria,partecipante.applicant);
 	end loop;
 	return new;
 end;
@@ -2508,21 +2507,6 @@ COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber,
 --
 
 COPY bdproject.users (username, password, name, surname, birthdate, birthplace, photo, regnumber, uprivilege, studycourse, tennismatch, volleymatch, soccermatch, phonenumber, basketmatch, gender) FROM stdin;
-straforiniandrea	3186	andrea	straforini	1994-10-14	Roma	\N	1000	base	biologia	0	0	0	\N	0	non definito
-zazzeraandrea	8429	andrea	zazzera	1992-10-07	Bogliasco	\N	1001	premium	fisica	0	0	0	\N	0	non definito
-storaceandrea	5472	andrea	storace	1991-07-20	Roma	\N	1002	base	chimica	0	0	0	\N	0	non definito
-armaninoandrea	826	andrea	armanino	1990-02-10	SestriCapitale	\N	1003	premium	giurisprudenza	0	0	0	\N	0	non definito
-campisiandrea	2996	andrea	campisi	1990-01-17	Roma	\N	1004	base	medicina	0	0	0	\N	0	non definito
-scipioniandrea	4373	andrea	scipioni	1996-01-18	Roma	\N	1005	premium	giurisprudenza	0	0	0	\N	0	non definito
-scottiandrea	55	andrea	scotti	1994-10-25	Bogliasco	\N	1006	base	matematica	0	0	0	\N	0	non definito
-simoniandrea	1877	andrea	simoni	1991-04-21	Bogliasco	\N	1007	premium	chimica	0	0	0	\N	0	non definito
-basileandrea	2549	andrea	basile	1996-04-10	Milano	\N	1008	base	lettere	0	0	0	\N	0	non definito
-saperdiandrea	4378	andrea	saperdi	1995-02-02	Milano	\N	1009	premium	lettere	0	0	0	\N	0	non definito
-sangalettiandrea	5777	andrea	sangaletti	1990-09-22	Bogliasco	\N	1010	base	biologia	0	0	0	\N	0	non definito
-paganiandrea	6763	andrea	pagani	1992-08-13	Bogliasco	\N	1011	premium	chimica	0	0	0	\N	0	non definito
-ferrariandrea	526	andrea	ferrari	1995-08-22	Milano	\N	1012	base	chimica	0	0	0	\N	0	non definito
-pannellaandrea	9955	andrea	pannella	1996-12-16	Roma	\N	1013	premium	giurisprudenza	0	0	0	\N	0	non definito
-tascaandrea	5277	andrea	tasca	1995-08-20	SestriCapitale	\N	1014	base	matematica	0	0	0	\N	0	non definito
 gardellaandrea	8863	andrea	gardella	1990-07-06	Roma	\N	1015	premium	chimica	0	0	0	\N	0	non definito
 zolezziandrea	7903	andrea	zolezzi	1993-02-04	SestriCapitale	\N	1016	base	matematica	0	0	0	\N	0	non definito
 oliveriandrea	8029	andrea	oliveri	1992-04-19	Bogliasco	\N	1017	premium	matematica	0	0	0	\N	0	non definito
@@ -2531,7 +2515,6 @@ polveriniandrea	6843	andrea	polverini	1991-03-21	Roma	\N	1019	premium	giurisprud
 pianforiniandrea	9527	andrea	pianforini	1990-11-09	Roma	\N	1020	base	lettere	0	0	0	\N	0	non definito
 stefaniniandrea	1730	andrea	stefanini	1990-11-18	SestriCapitale	\N	1021	premium	fisica	0	0	0	\N	0	non definito
 tavellaandrea	2670	andrea	tavella	1995-09-03	Milano	\N	1022	base	medicina	0	0	0	\N	0	non definito
-conteandrea	5174	andrea	conte	1996-05-08	Bogliasco	\N	1023	premium	giurisprudenza	0	0	0	\N	0	non definito
 mattarellaandrea	2539	andrea	mattarella	1994-02-17	Roma	\N	1024	base	lettere	0	0	0	\N	0	non definito
 gentiloniandrea	1636	andrea	gentiloni	1990-09-18	SestriCapitale	\N	1025	premium	matematica	0	0	0	\N	0	non definito
 napolitanoandrea	9521	andrea	napolitano	1992-02-10	SestriCapitale	\N	1026	base	biologia	0	0	0	\N	0	non definito
@@ -3009,6 +2992,22 @@ paganirita	2434	rita	pagani	1993-05-20	SestriCapitale	\N	1497	premium	lettere	0	
 ferraririta	1686	rita	ferrari	1992-08-09	SestriCapitale	\N	1498	base	matematica	0	0	0	\N	0	non definito
 pannellarita	1975	rita	pannella	1994-01-19	Bogliasco	\N	1499	premium	biologia	0	0	0	\N	0	non definito
 tascarita	2528	rita	tasca	1990-09-22	Milano	\N	1500	base	fisica	0	0	0	\N	0	non definito
+straforiniandrea	3186	andrea	straforini	1994-10-14	Roma	\N	1000	base	biologia	0	0	0	\N	1	non definito
+conteandrea	5174	andrea	conte	1996-05-08	Bogliasco	\N	1023	premium	giurisprudenza	0	0	0	\N	1	non definito
+zazzeraandrea	8429	andrea	zazzera	1992-10-07	Bogliasco	\N	1001	premium	fisica	0	0	0	\N	1	non definito
+storaceandrea	5472	andrea	storace	1991-07-20	Roma	\N	1002	base	chimica	0	0	0	\N	1	non definito
+armaninoandrea	826	andrea	armanino	1990-02-10	SestriCapitale	\N	1003	premium	giurisprudenza	0	0	0	\N	1	non definito
+campisiandrea	2996	andrea	campisi	1990-01-17	Roma	\N	1004	base	medicina	0	0	0	\N	1	non definito
+scipioniandrea	4373	andrea	scipioni	1996-01-18	Roma	\N	1005	premium	giurisprudenza	0	0	0	\N	1	non definito
+scottiandrea	55	andrea	scotti	1994-10-25	Bogliasco	\N	1006	base	matematica	0	0	0	\N	1	non definito
+simoniandrea	1877	andrea	simoni	1991-04-21	Bogliasco	\N	1007	premium	chimica	0	0	0	\N	1	non definito
+basileandrea	2549	andrea	basile	1996-04-10	Milano	\N	1008	base	lettere	0	0	0	\N	1	non definito
+saperdiandrea	4378	andrea	saperdi	1995-02-02	Milano	\N	1009	premium	lettere	0	0	0	\N	1	non definito
+sangalettiandrea	5777	andrea	sangaletti	1990-09-22	Bogliasco	\N	1010	base	biologia	0	0	0	\N	1	non definito
+paganiandrea	6763	andrea	pagani	1992-08-13	Bogliasco	\N	1011	premium	chimica	0	0	0	\N	1	non definito
+ferrariandrea	526	andrea	ferrari	1995-08-22	Milano	\N	1012	base	chimica	0	0	0	\N	1	non definito
+pannellaandrea	9955	andrea	pannella	1996-12-16	Roma	\N	1013	premium	giurisprudenza	0	0	0	\N	1	non definito
+tascaandrea	5277	andrea	tasca	1995-08-20	SestriCapitale	\N	1014	base	matematica	0	0	0	\N	1	non definito
 \.
 
 
