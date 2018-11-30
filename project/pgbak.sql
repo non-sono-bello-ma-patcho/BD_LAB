@@ -658,9 +658,8 @@ begin
 					where match = matchno 
 						and confirmed is not null
 			) AS aux
-		) >= 2;
+		) > 2;--le partite in questo caso sono sempre giocate da 2 squadre
 end;
-
 
 
 $$;
@@ -673,6 +672,38 @@ ALTER FUNCTION bdproject.match_full(matchno bigint) OWNER TO postgres;
 --
 
 COMMENT ON FUNCTION bdproject.match_full(matchno bigint) IS 'Restituisce vero esistono due squadre confermate per una partita';
+
+
+--
+-- Name: match_full_plus_1(bigint); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.match_full_plus_1(matchno bigint) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+begin
+	return
+		(select count (*)
+			from (
+					select team 
+					from matchcandidatures
+					where match = matchno 
+						and confirmed is not null
+			) AS aux
+		) >=2;--le partite in questo caso sono sempre giocate da 2 squadre
+end;
+
+
+$$;
+
+
+ALTER FUNCTION bdproject.match_full_plus_1(matchno bigint) OWNER TO strafo;
+
+--
+-- Name: FUNCTION match_full_plus_1(matchno bigint); Type: COMMENT; Schema: bdproject; Owner: strafo
+--
+
+COMMENT ON FUNCTION bdproject.match_full_plus_1(matchno bigint) IS 'Serve per controllare se la partita può passare da aperta a chiusa-';
 
 
 --
@@ -774,9 +805,10 @@ begin
     end loop;
   end loop;
 
-  if  match_full(new.match) then
+  if  match_full_plus_1(new.match) then
     update matches
-    set mstate='closed';
+    set mstate='closed'
+    where matches.id=new.match;
   end if;
   return new;
 end;
@@ -2215,8 +2247,8 @@ SELECT pg_catalog.setval('bdproject.fora_photo_seq', 1, false);
 --
 
 COPY bdproject.matchcandidatures (team, match, confirmed) FROM stdin;
-33_1	33	\N
-33_2	33	\N
+33_1	33	straforiniandrea
+33_2	33	straforiniandrea
 \.
 
 
@@ -2232,7 +2264,7 @@ SELECT pg_catalog.setval('bdproject.matchcandidatures_match_seq', 1, false);
 --
 
 COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category, phase) FROM stdin;
-33	A. S. D. Castelletto 	2018-11-30	2018-11-30	\N	open	straforiniandrea	basket	\N
+33	A. S. D. Castelletto 	2018-11-30	2018-11-30	\N	closed	straforiniandrea	basket	\N
 \.
 
 
@@ -2429,6 +2461,22 @@ Non sono bello ma patcho	polveriniadriana	\N	player
 Non sono bello ma patcho	straforinigemma	\N	player
 Non sono bello ma patcho	simoniandrea	\N	player
 Non sono bello ma patcho	armaninoadamo	\N	player
+33_1	straforiniandrea	straforiniandrea	player
+33_1	conteandrea	straforiniandrea	player
+33_1	zazzeraandrea	straforiniandrea	player
+33_1	storaceandrea	straforiniandrea	player
+33_1	armaninoandrea	straforiniandrea	player
+33_1	campisiandrea	straforiniandrea	player
+33_1	scipioniandrea	straforiniandrea	player
+33_1	scottiandrea	straforiniandrea	player
+33_1	simoniandrea	straforiniandrea	player
+33_2	basileandrea	straforiniandrea	player
+33_2	saperdiandrea	straforiniandrea	player
+33_2	sangalettiandrea	straforiniandrea	player
+33_2	paganiandrea	straforiniandrea	player
+33_2	ferrariandrea	straforiniandrea	player
+33_2	pannellaandrea	straforiniandrea	player
+33_2	tascaandrea	straforiniandrea	player
 \.
 
 
