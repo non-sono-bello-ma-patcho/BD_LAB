@@ -809,7 +809,7 @@ begin
           raise exception 'L''admin % del match non corrisponde al manager del torneo % associato.',new.admin,new.tournament;
         end if;
       else
-          raise exception 'Le partite del torneo vengono inserite automaticamente';
+          raise exception 'Le partite dei tornei vengono inserite automaticamente.(tranne per il misto)';
       end if;
   end if ;
 	return new;
@@ -1670,7 +1670,7 @@ CREATE TABLE bdproject.matchcandidatures (
     team character varying(64) NOT NULL,
     match bigint NOT NULL,
     confirmed character varying(64),
-    CONSTRAINT checkconfirmer CHECK (bdproject.sameadminmatch(match, confirmed)),
+    CONSTRAINT checkconfirmer CHECK (((confirmed IS NULL) OR bdproject.sameadminmatch(match, confirmed))),
     CONSTRAINT same_category CHECK (bdproject.aux_samecat(match, team))
 );
 
@@ -2215,6 +2215,8 @@ SELECT pg_catalog.setval('bdproject.fora_photo_seq', 1, false);
 --
 
 COPY bdproject.matchcandidatures (team, match, confirmed) FROM stdin;
+33_1	33	\N
+33_2	33	\N
 \.
 
 
@@ -2230,6 +2232,7 @@ SELECT pg_catalog.setval('bdproject.matchcandidatures_match_seq', 1, false);
 --
 
 COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category, phase) FROM stdin;
+33	A. S. D. Castelletto 	2018-11-30	2018-11-30	\N	open	straforiniandrea	basket	\N
 \.
 
 
@@ -2237,7 +2240,7 @@ COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstat
 -- Name: matches_id_seq; Type: SEQUENCE SET; Schema: bdproject; Owner: postgres
 --
 
-SELECT pg_catalog.setval('bdproject.matches_id_seq', 31, true);
+SELECT pg_catalog.setval('bdproject.matches_id_seq', 34, true);
 
 
 --
@@ -2438,6 +2441,8 @@ Team1	\N	basket	\N	\N	malattoandrea	closed
 Non sono bello ma patcho	\N	basket	ci mettiamo impegno	\N	straforiniandrea	closed
 squadra1	blu	tennis	team1desc	team1notes	zazzeraandrea	closed
 squadra2	rosso	tennis	team2desc	team2notes	armaninoandrea	open
+33_1	\N	basket	\N	\N	straforiniandrea	open
+33_2	\N	basket	\N	\N	straforiniandrea	open
 \.
 
 
