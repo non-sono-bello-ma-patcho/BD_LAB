@@ -1633,6 +1633,8 @@ CREATE TABLE bdproject.evaluations (
     evaluatedon date DEFAULT ('now'::text)::date,
     match bigint NOT NULL,
     score integer,
+    comment text,
+    CONSTRAINT evaluation_range CHECK (((score >= 0) AND (score <= 10))),
     CONSTRAINT not_self_eval CHECK (((evaluated)::text <> (evaluator)::text))
 );
 
@@ -2218,9 +2220,9 @@ basket	molto bello	2	10	\N
 -- Data for Name: evaluations; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.evaluations (evaluated, evaluator, evaluatedon, match, score) FROM stdin;
-straforiniandrea	tascaandrea	2018-12-03	33	5
-straforiniandrea	conteandrea	2018-12-03	33	5
+COPY bdproject.evaluations (evaluated, evaluator, evaluatedon, match, score, comment) FROM stdin;
+straforiniandrea	tascaandrea	2018-12-03	33	5	\N
+straforiniandrea	conteandrea	2018-12-03	33	5	\N
 \.
 
 
