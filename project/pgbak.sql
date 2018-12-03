@@ -2992,22 +2992,22 @@ paganirita	2434	rita	pagani	1993-05-20	SestriCapitale	\N	1497	premium	lettere	0	
 ferraririta	1686	rita	ferrari	1992-08-09	SestriCapitale	\N	1498	base	matematica	0	0	0	\N	0	non definito
 pannellarita	1975	rita	pannella	1994-01-19	Bogliasco	\N	1499	premium	biologia	0	0	0	\N	0	non definito
 tascarita	2528	rita	tasca	1990-09-22	Milano	\N	1500	base	fisica	0	0	0	\N	0	non definito
-straforiniandrea	3186	andrea	straforini	1994-10-14	Roma	\N	1000	base	biologia	0	0	0	\N	1	non definito
-conteandrea	5174	andrea	conte	1996-05-08	Bogliasco	\N	1023	premium	giurisprudenza	0	0	0	\N	1	non definito
-zazzeraandrea	8429	andrea	zazzera	1992-10-07	Bogliasco	\N	1001	premium	fisica	0	0	0	\N	1	non definito
-storaceandrea	5472	andrea	storace	1991-07-20	Roma	\N	1002	base	chimica	0	0	0	\N	1	non definito
-armaninoandrea	826	andrea	armanino	1990-02-10	SestriCapitale	\N	1003	premium	giurisprudenza	0	0	0	\N	1	non definito
-campisiandrea	2996	andrea	campisi	1990-01-17	Roma	\N	1004	base	medicina	0	0	0	\N	1	non definito
-scipioniandrea	4373	andrea	scipioni	1996-01-18	Roma	\N	1005	premium	giurisprudenza	0	0	0	\N	1	non definito
-scottiandrea	55	andrea	scotti	1994-10-25	Bogliasco	\N	1006	base	matematica	0	0	0	\N	1	non definito
-simoniandrea	1877	andrea	simoni	1991-04-21	Bogliasco	\N	1007	premium	chimica	0	0	0	\N	1	non definito
-basileandrea	2549	andrea	basile	1996-04-10	Milano	\N	1008	base	lettere	0	0	0	\N	1	non definito
-saperdiandrea	4378	andrea	saperdi	1995-02-02	Milano	\N	1009	premium	lettere	0	0	0	\N	1	non definito
-sangalettiandrea	5777	andrea	sangaletti	1990-09-22	Bogliasco	\N	1010	base	biologia	0	0	0	\N	1	non definito
-paganiandrea	6763	andrea	pagani	1992-08-13	Bogliasco	\N	1011	premium	chimica	0	0	0	\N	1	non definito
-ferrariandrea	526	andrea	ferrari	1995-08-22	Milano	\N	1012	base	chimica	0	0	0	\N	1	non definito
-pannellaandrea	9955	andrea	pannella	1996-12-16	Roma	\N	1013	premium	giurisprudenza	0	0	0	\N	1	non definito
-tascaandrea	5277	andrea	tasca	1995-08-20	SestriCapitale	\N	1014	base	matematica	0	0	0	\N	1	non definito
+straforiniandrea	3186	andrea	straforini	1994-10-14	Roma	\N	1000	base	biologia	0	0	0	\N	3	non definito
+conteandrea	5174	andrea	conte	1996-05-08	Bogliasco	\N	1023	premium	giurisprudenza	0	0	0	\N	3	non definito
+zazzeraandrea	8429	andrea	zazzera	1992-10-07	Bogliasco	\N	1001	premium	fisica	0	0	0	\N	3	non definito
+storaceandrea	5472	andrea	storace	1991-07-20	Roma	\N	1002	base	chimica	0	0	0	\N	3	non definito
+armaninoandrea	826	andrea	armanino	1990-02-10	SestriCapitale	\N	1003	premium	giurisprudenza	0	0	0	\N	3	non definito
+campisiandrea	2996	andrea	campisi	1990-01-17	Roma	\N	1004	base	medicina	0	0	0	\N	3	non definito
+scipioniandrea	4373	andrea	scipioni	1996-01-18	Roma	\N	1005	premium	giurisprudenza	0	0	0	\N	3	non definito
+scottiandrea	55	andrea	scotti	1994-10-25	Bogliasco	\N	1006	base	matematica	0	0	0	\N	3	non definito
+simoniandrea	1877	andrea	simoni	1991-04-21	Bogliasco	\N	1007	premium	chimica	0	0	0	\N	3	non definito
+basileandrea	2549	andrea	basile	1996-04-10	Milano	\N	1008	base	lettere	0	0	0	\N	3	non definito
+saperdiandrea	4378	andrea	saperdi	1995-02-02	Milano	\N	1009	premium	lettere	0	0	0	\N	3	non definito
+sangalettiandrea	5777	andrea	sangaletti	1990-09-22	Bogliasco	\N	1010	base	biologia	0	0	0	\N	3	non definito
+paganiandrea	6763	andrea	pagani	1992-08-13	Bogliasco	\N	1011	premium	chimica	0	0	0	\N	3	non definito
+ferrariandrea	526	andrea	ferrari	1995-08-22	Milano	\N	1012	base	chimica	0	0	0	\N	3	non definito
+pannellaandrea	9955	andrea	pannella	1996-12-16	Roma	\N	1013	premium	giurisprudenza	0	0	0	\N	3	non definito
+tascaandrea	5277	andrea	tasca	1995-08-20	SestriCapitale	\N	1014	base	matematica	0	0	0	\N	3	non definito
 \.
 
 
