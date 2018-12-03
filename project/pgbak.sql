@@ -2264,7 +2264,7 @@ SELECT pg_catalog.setval('bdproject.matchcandidatures_match_seq', 1, false);
 --
 
 COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category, phase) FROM stdin;
-33	A. S. D. Castelletto 	2018-11-30	2018-11-30	\N	closed	straforiniandrea	basket	\N
+33	A. S. D. Castelletto 	2018-11-30	2018-11-30	\N	open	straforiniandrea	basket	\N
 \.
 
 
