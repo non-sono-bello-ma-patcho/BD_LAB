@@ -740,9 +740,7 @@ begin
       raise exception 'Impossibile inserire recension.Nessuna partita in comune.';
       end if;
       
-      if(new.evaluated=new.evaluator)then 
-        raise exception 'Impossibile inserire un auto valutazione.';
-      end if;
+     
   return new;
 end;
 $$;
@@ -2221,6 +2219,8 @@ basket	molto bello	2	10	\N
 --
 
 COPY bdproject.evaluations (evaluated, evaluator, evaluatedon, match, score) FROM stdin;
+straforiniandrea	tascaandrea	2018-12-03	33	5
+straforiniandrea	conteandrea	2018-12-03	33	5
 \.
 
 
