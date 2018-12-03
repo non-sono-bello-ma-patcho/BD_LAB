@@ -739,6 +739,10 @@ begin
       if (partiteincomune=0) then
       raise exception 'Impossibile inserire recension.Nessuna partita in comune.';
       end if;
+      
+      if(new.evaluated=new.evaluator)then 
+        raise exception 'Impossibile inserire un auto valutazione.';
+      end if;
   return new;
 end;
 $$;
@@ -2264,7 +2268,7 @@ SELECT pg_catalog.setval('bdproject.matchcandidatures_match_seq', 1, false);
 --
 
 COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category, phase) FROM stdin;
-33	A. S. D. Castelletto 	2018-11-30	2018-11-30	\N	open	straforiniandrea	basket	\N
+33	A. S. D. Castelletto 	2018-11-30	2018-11-30	\N	closed	straforiniandrea	basket	\N
 \.
 
 
@@ -2280,6 +2284,7 @@ SELECT pg_catalog.setval('bdproject.matches_id_seq', 34, true);
 --
 
 COPY bdproject.outcomes (match, otype, scoreteam1, scoreteam2, goleadorteam1, goleadorteam2, winteam1, winteam2, admin, insertedon, duration) FROM stdin;
+33	basket	3	2	straforiniandrea	zazzeraanadrea	0	0	straforiniandrea	2018-12-03	01:00:00
 \.
 
 
@@ -2992,22 +2997,22 @@ paganirita	2434	rita	pagani	1993-05-20	SestriCapitale	\N	1497	premium	lettere	0	
 ferraririta	1686	rita	ferrari	1992-08-09	SestriCapitale	\N	1498	base	matematica	0	0	0	\N	0	non definito
 pannellarita	1975	rita	pannella	1994-01-19	Bogliasco	\N	1499	premium	biologia	0	0	0	\N	0	non definito
 tascarita	2528	rita	tasca	1990-09-22	Milano	\N	1500	base	fisica	0	0	0	\N	0	non definito
-straforiniandrea	3186	andrea	straforini	1994-10-14	Roma	\N	1000	base	biologia	0	0	0	\N	3	non definito
-conteandrea	5174	andrea	conte	1996-05-08	Bogliasco	\N	1023	premium	giurisprudenza	0	0	0	\N	3	non definito
-zazzeraandrea	8429	andrea	zazzera	1992-10-07	Bogliasco	\N	1001	premium	fisica	0	0	0	\N	3	non definito
-storaceandrea	5472	andrea	storace	1991-07-20	Roma	\N	1002	base	chimica	0	0	0	\N	3	non definito
-armaninoandrea	826	andrea	armanino	1990-02-10	SestriCapitale	\N	1003	premium	giurisprudenza	0	0	0	\N	3	non definito
-campisiandrea	2996	andrea	campisi	1990-01-17	Roma	\N	1004	base	medicina	0	0	0	\N	3	non definito
-scipioniandrea	4373	andrea	scipioni	1996-01-18	Roma	\N	1005	premium	giurisprudenza	0	0	0	\N	3	non definito
-scottiandrea	55	andrea	scotti	1994-10-25	Bogliasco	\N	1006	base	matematica	0	0	0	\N	3	non definito
-simoniandrea	1877	andrea	simoni	1991-04-21	Bogliasco	\N	1007	premium	chimica	0	0	0	\N	3	non definito
-basileandrea	2549	andrea	basile	1996-04-10	Milano	\N	1008	base	lettere	0	0	0	\N	3	non definito
-saperdiandrea	4378	andrea	saperdi	1995-02-02	Milano	\N	1009	premium	lettere	0	0	0	\N	3	non definito
-sangalettiandrea	5777	andrea	sangaletti	1990-09-22	Bogliasco	\N	1010	base	biologia	0	0	0	\N	3	non definito
-paganiandrea	6763	andrea	pagani	1992-08-13	Bogliasco	\N	1011	premium	chimica	0	0	0	\N	3	non definito
-ferrariandrea	526	andrea	ferrari	1995-08-22	Milano	\N	1012	base	chimica	0	0	0	\N	3	non definito
-pannellaandrea	9955	andrea	pannella	1996-12-16	Roma	\N	1013	premium	giurisprudenza	0	0	0	\N	3	non definito
-tascaandrea	5277	andrea	tasca	1995-08-20	SestriCapitale	\N	1014	base	matematica	0	0	0	\N	3	non definito
+straforiniandrea	3186	andrea	straforini	1994-10-14	Roma	\N	1000	base	biologia	0	0	0	\N	4	non definito
+conteandrea	5174	andrea	conte	1996-05-08	Bogliasco	\N	1023	premium	giurisprudenza	0	0	0	\N	4	non definito
+zazzeraandrea	8429	andrea	zazzera	1992-10-07	Bogliasco	\N	1001	premium	fisica	0	0	0	\N	4	non definito
+storaceandrea	5472	andrea	storace	1991-07-20	Roma	\N	1002	base	chimica	0	0	0	\N	4	non definito
+armaninoandrea	826	andrea	armanino	1990-02-10	SestriCapitale	\N	1003	premium	giurisprudenza	0	0	0	\N	4	non definito
+campisiandrea	2996	andrea	campisi	1990-01-17	Roma	\N	1004	base	medicina	0	0	0	\N	4	non definito
+scipioniandrea	4373	andrea	scipioni	1996-01-18	Roma	\N	1005	premium	giurisprudenza	0	0	0	\N	4	non definito
+scottiandrea	55	andrea	scotti	1994-10-25	Bogliasco	\N	1006	base	matematica	0	0	0	\N	4	non definito
+simoniandrea	1877	andrea	simoni	1991-04-21	Bogliasco	\N	1007	premium	chimica	0	0	0	\N	4	non definito
+basileandrea	2549	andrea	basile	1996-04-10	Milano	\N	1008	base	lettere	0	0	0	\N	4	non definito
+saperdiandrea	4378	andrea	saperdi	1995-02-02	Milano	\N	1009	premium	lettere	0	0	0	\N	4	non definito
+sangalettiandrea	5777	andrea	sangaletti	1990-09-22	Bogliasco	\N	1010	base	biologia	0	0	0	\N	4	non definito
+paganiandrea	6763	andrea	pagani	1992-08-13	Bogliasco	\N	1011	premium	chimica	0	0	0	\N	4	non definito
+ferrariandrea	526	andrea	ferrari	1995-08-22	Milano	\N	1012	base	chimica	0	0	0	\N	4	non definito
+pannellaandrea	9955	andrea	pannella	1996-12-16	Roma	\N	1013	premium	giurisprudenza	0	0	0	\N	4	non definito
+tascaandrea	5277	andrea	tasca	1995-08-20	SestriCapitale	\N	1014	base	matematica	0	0	0	\N	4	non definito
 \.
 
 
@@ -3149,7 +3154,7 @@ CREATE TRIGGER trigger_evaluations_insert AFTER INSERT ON bdproject.evaluations 
 -- Name: TRIGGER trigger_evaluations_insert ON evaluations; Type: COMMENT; Schema: bdproject; Owner: postgres
 --
 
-COMMENT ON TRIGGER trigger_evaluations_insert ON bdproject.evaluations IS 'Controlla che l''inserimento della recensione avvnega con almeno un match giocato in comune.';
+COMMENT ON TRIGGER trigger_evaluations_insert ON bdproject.evaluations IS 'Controlla che l''inserimento della recensione avvnega con almeno un match giocato in comune e che non sia un auto valutazione.';
 
 
 --
