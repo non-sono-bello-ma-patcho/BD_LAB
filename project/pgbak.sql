@@ -866,13 +866,10 @@ declare
 			from matchcandidatures inner join teamcandidatures on matchcandidatures.team=teamcandidatures.team
 			where matchcandidatures.match=new.match and matchcandidatures.confirmed is not null  and teamcandidatures.admin is not null ;
 	categoria bdproject.sport;
-
 begin
 	--esiste la partita in questione? sì perchè match è chiave primaria sulla tabella match--
 
-	--stessa categoria?
-	select category from matches where matches.id=new.match into categoria;
-	if(new.otype<>categoria)then raise exception 'Categoria dell''esito diversa dalla categoria del match: % % .',new.otype,categoria;end if;
+	select id from matches where matches.id=new.match into categoria;
 	--l'admin che la conferma è quello giusto?--
 	if(not sameadminmatch(new.match,new.admin)) then
 		raise exception
@@ -1780,16 +1777,13 @@ ALTER SEQUENCE bdproject.matches_id_seq OWNED BY bdproject.matches.id;
 
 CREATE TABLE bdproject.outcomes (
     match bigint NOT NULL,
-    otype bdproject.sport NOT NULL,
-    scoreteam1 integer,
-    scoreteam2 integer,
-    goleadorteam1 text,
-    goleadorteam2 text,
-    winteam1 integer,
-    winteam2 integer,
+    score integer DEFAULT 0 NOT NULL,
+    goleador text,
+    win integer NOT NULL,
     admin character varying(64) NOT NULL,
     insertedon date DEFAULT ('now'::text)::date NOT NULL,
-    duration time without time zone DEFAULT '00:00:00'::time without time zone
+    duration time without time zone DEFAULT '00:00:00'::time without time zone,
+    team character varying(64) NOT NULL
 );
 
 
@@ -2027,25 +2021,6 @@ CREATE TABLE bdproject.studycourses (
 ALTER TABLE bdproject.studycourses OWNER TO postgres;
 
 --
--- Name: tournamentprogram; Type: VIEW; Schema: bdproject; Owner: andreo
---
-
-CREATE VIEW bdproject.tournamentprogram AS
- SELECT matches.tournament,
-    matches.building,
-    matches.organizedon,
-    matches.id,
-    bdproject.aux_competitors(matches.id) AS competitors,
-    bdproject.aux_referee(matches.id) AS referee,
-    matches.phase,
-    (((outcomes.winteam1)::text || ' a '::text) || (outcomes.winteam2)::text) AS outcomes
-   FROM (bdproject.matches
-     LEFT JOIN bdproject.outcomes ON ((matches.id = outcomes.match)));
-
-
-ALTER TABLE bdproject.tournamentprogram OWNER TO andreo;
-
---
 -- Name: tournaments; Type: TABLE; Schema: bdproject; Owner: postgres
 --
 
@@ -2057,6 +2032,7 @@ CREATE TABLE bdproject.tournaments (
     teamsnumber integer DEFAULT 2 NOT NULL,
     state bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
     category bdproject.sport,
+    winner character varying(64) DEFAULT NULL::character varying,
     CONSTRAINT manager_premium CHECK (public.ispremium(manager))
 );
 
@@ -2285,8 +2261,7 @@ SELECT pg_catalog.setval('bdproject.matches_id_seq', 34, true);
 -- Data for Name: outcomes; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.outcomes (match, otype, scoreteam1, scoreteam2, goleadorteam1, goleadorteam2, winteam1, winteam2, admin, insertedon, duration) FROM stdin;
-33	basket	3	2	straforiniandrea	zazzeraanadrea	0	0	straforiniandrea	2018-12-03	01:00:00
+COPY bdproject.outcomes (match, score, goleador, win, admin, insertedon, duration, team) FROM stdin;
 \.
 
 
@@ -2505,7 +2480,7 @@ squadra2	rosso	tennis	team2desc	team2notes	armaninoandrea	open
 -- Data for Name: tournaments; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber, state, category) FROM stdin;
+COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber, state, category, winner) FROM stdin;
 \.
 
 
@@ -3371,19 +3346,19 @@ ALTER TABLE ONLY bdproject.outcomes
 
 
 --
--- Name: outcomes outcomes_categories_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
---
-
-ALTER TABLE ONLY bdproject.outcomes
-    ADD CONSTRAINT outcomes_categories_name_fk FOREIGN KEY (otype) REFERENCES bdproject.categories(name);
-
-
---
 -- Name: outcomes outcomes_match_fkey; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
 --
 
 ALTER TABLE ONLY bdproject.outcomes
     ADD CONSTRAINT outcomes_match_fkey FOREIGN KEY (match) REFERENCES bdproject.matches(id);
+
+
+--
+-- Name: outcomes outcomes_teams_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
+--
+
+ALTER TABLE ONLY bdproject.outcomes
+    ADD CONSTRAINT outcomes_teams_name_fk FOREIGN KEY (team) REFERENCES bdproject.teams(name) ON DELETE CASCADE;
 
 
 --
@@ -3504,6 +3479,14 @@ ALTER TABLE ONLY bdproject.tournaments
 
 ALTER TABLE ONLY bdproject.tournaments
     ADD CONSTRAINT tournaments_manager_fkey FOREIGN KEY (manager) REFERENCES bdproject.users(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: tournaments tournaments_teams_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
+--
+
+ALTER TABLE ONLY bdproject.tournaments
+    ADD CONSTRAINT tournaments_teams_name_fk FOREIGN KEY (winner) REFERENCES bdproject.teams(name) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
