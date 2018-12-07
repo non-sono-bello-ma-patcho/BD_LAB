@@ -1965,7 +1965,7 @@ CREATE VIEW bdproject.program AS
     matches.category,
     count(DISTINCT matches.tournament) AS tournaments,
     count(matches.id) AS matches,
-    count(c.player) AS participants,
+    count(DISTINCT c.player) AS participants,
     count(DISTINCT u.studycourse) AS cs,
     sum((outcomes.duration)::interval) AS totalduration,
     (sum((outcomes.duration)::interval) / (avg(((date_part('hour'::text, (buildings.closure - buildings.opening)))::integer * bdproject.aux_workinghours(matches.organizedon))))::double precision) AS usagepercentage
@@ -3242,20 +3242,6 @@ CREATE TRIGGER trigger_refereecandidatures_update AFTER UPDATE ON bdproject.refe
 --
 
 COMMENT ON TRIGGER trigger_refereecandidatures_update ON bdproject.refereecandidatures IS 'Controlla che non sia assegnato già un arbitro alla partita';
-
-
---
--- Name: teamcandidatures trigger_teamcandidatures_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
---
-
-CREATE TRIGGER trigger_teamcandidatures_insert AFTER INSERT ON bdproject.teamcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_teamcandidatures_insert();
-
-
---
--- Name: teamcandidatures trigger_teamcandidatures_update; Type: TRIGGER; Schema: bdproject; Owner: postgres
---
-
-CREATE TRIGGER trigger_teamcandidatures_update AFTER UPDATE ON bdproject.teamcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_teamcandidatures_update();
 
 
 --
