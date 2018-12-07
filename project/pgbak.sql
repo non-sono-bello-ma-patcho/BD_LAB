@@ -214,15 +214,15 @@ $$;
 ALTER FUNCTION bdproject.aux_samecat(m bigint, t character varying) OWNER TO andreo;
 
 --
--- Name: aux_workinghours(date); Type: FUNCTION; Schema: bdproject; Owner: andreo
+-- Name: aux_workingdays(date); Type: FUNCTION; Schema: bdproject; Owner: andreo
 --
 
-CREATE FUNCTION bdproject.aux_workinghours(cdate date) RETURNS integer
+CREATE FUNCTION bdproject.aux_workingdays(cdate date) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare
-  cmonth integer:= date_trunc('month', (cdate));
-  cyear integer:= date_trunc('year', (cdate));
+  cmonth integer:= date_part('month', (cdate));
+  cyear integer:= date_part('year', (cdate));
   daysnum integer:= (select date_part('days',
                                       (cyear::text ||'-'|| cmonth::text ||'-01')::date
                                         + '1 month' :: interval
@@ -234,15 +234,15 @@ BEGIN
   (
       select dd, extract(DOW from dd) dw
       from generate_series((cyear :: text ||'-'|| cmonth :: text ||'-01') :: date,
-                           (cyear :: text ||'-'|| cmonth :: text ||daysnum :: text) :: date, '1 day' :: interval) dd
+                           (cyear :: text ||'-'|| cmonth :: text || '-' ||daysnum :: text) :: date, '1 day' :: interval) dd
   )
-  select * from days where dw not in (6, 0)
+  select count(*) from days where dw not in (6, 0)
   );
 END;
 $$;
 
 
-ALTER FUNCTION bdproject.aux_workinghours(cdate date) OWNER TO andreo;
+ALTER FUNCTION bdproject.aux_workingdays(cdate date) OWNER TO andreo;
 
 --
 -- Name: count_match_played_by_category(character varying, bdproject.sport); Type: FUNCTION; Schema: bdproject; Owner: strafo
@@ -1965,10 +1965,10 @@ CREATE VIEW bdproject.program AS
     matches.category,
     count(DISTINCT matches.tournament) AS tournaments,
     count(matches.id) AS matches,
-    count(DISTINCT c.player) AS participants,
+    count(c.player) AS participants,
     count(DISTINCT u.studycourse) AS cs,
-    sum((outcomes.duration)::interval) AS totalduration,
-    (sum((outcomes.duration)::interval) / (avg(((date_part('hour'::text, (buildings.closure - buildings.opening)))::integer * bdproject.aux_workinghours(matches.organizedon))))::double precision) AS usagepercentage
+    date_part('hours'::text, sum((outcomes.duration)::interval)) AS totalduration,
+    (date_part('hours'::text, sum((outcomes.duration)::interval)) / avg((date_part('hour'::text, (buildings.closure - buildings.opening)) * (bdproject.aux_workingdays(matches.organizedon))::double precision))) AS usagepercentage
    FROM (((((bdproject.matches
      LEFT JOIN bdproject.matchcandidatures mc ON ((matches.id = mc.match)))
      LEFT JOIN bdproject.compositions c ON (((mc.team)::text = (c.team)::text)))
@@ -3245,17 +3245,17 @@ COMMENT ON TRIGGER trigger_refereecandidatures_update ON bdproject.refereecandid
 
 
 --
--- Name: tournaments trigger_tournaments_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
+-- Name: teamcandidatures trigger_teamcandidatures_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
-CREATE TRIGGER trigger_tournaments_insert AFTER INSERT ON bdproject.tournaments FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_tournaments_insert();
+CREATE TRIGGER trigger_teamcandidatures_insert AFTER INSERT ON bdproject.teamcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_teamcandidatures_insert();
 
 
 --
--- Name: TRIGGER trigger_tournaments_insert ON tournaments; Type: COMMENT; Schema: bdproject; Owner: postgres
+-- Name: teamcandidatures trigger_teamcandidatures_update; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
-COMMENT ON TRIGGER trigger_tournaments_insert ON bdproject.tournaments IS 'Crea automaticamnte le partite per tutti i tipi di toneo meno quello misto.Controlla inoltre che il numero di squadre sia sufficente.';
+CREATE TRIGGER trigger_teamcandidatures_update AFTER UPDATE ON bdproject.teamcandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_teamcandidatures_update();
 
 
 --
