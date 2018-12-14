@@ -1013,6 +1013,40 @@ $$;
 ALTER FUNCTION bdproject.proc_trigger_tournaments_insert() OWNER TO strafo;
 
 --
+-- Name: proc_trigger_tournamentscandidatures_insert(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.proc_trigger_tournamentscandidatures_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+begin 
+   if(new.confirmed is not null) then
+    raise exception 'Impossibile inserire e confermare la candidatura allo stesso tempo';
+  end if;
+	return new;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.proc_trigger_tournamentscandidatures_insert() OWNER TO strafo;
+
+--
+-- Name: proc_trigger_tournamentscandidatures_update(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.proc_trigger_tournamentscandidatures_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+begin
+   
+	return new;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.proc_trigger_tournamentscandidatures_update() OWNER TO strafo;
+
+--
 -- Name: referee_assigned(bigint); Type: FUNCTION; Schema: bdproject; Owner: postgres
 --
 
@@ -2038,7 +2072,7 @@ CREATE TABLE bdproject.tournaments (
 ALTER TABLE bdproject.tournaments OWNER TO postgres;
 
 --
--- Name: tournamentscandidatures; Type: TABLE; Schema: bdproject; Owner: andreo
+-- Name: tournamentscandidatures; Type: TABLE; Schema: bdproject; Owner: postgres
 --
 
 CREATE TABLE bdproject.tournamentscandidatures (
@@ -2049,7 +2083,7 @@ CREATE TABLE bdproject.tournamentscandidatures (
 );
 
 
-ALTER TABLE bdproject.tournamentscandidatures OWNER TO andreo;
+ALTER TABLE bdproject.tournamentscandidatures OWNER TO postgres;
 
 --
 -- Name: users_photo_seq; Type: SEQUENCE; Schema: bdproject; Owner: postgres
@@ -2499,7 +2533,7 @@ COPY bdproject.tournaments (name, ttype, manager, teamsnumber, state, category, 
 
 
 --
--- Data for Name: tournamentscandidatures; Type: TABLE DATA; Schema: bdproject; Owner: andreo
+-- Data for Name: tournamentscandidatures; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
 COPY bdproject.tournamentscandidatures (team, tournament, confirmed) FROM stdin;
@@ -3263,6 +3297,20 @@ CREATE TRIGGER trigger_tournaments_insert AFTER UPDATE ON bdproject.tournaments 
 
 
 --
+-- Name: tournamentscandidatures trigger_tournamentscandidatures_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_tournamentscandidatures_insert AFTER INSERT ON bdproject.tournamentscandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_tournamentscandidatures_insert();
+
+
+--
+-- Name: tournamentscandidatures trigger_tournamentscandidatures_update; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_tournamentscandidatures_update AFTER INSERT ON bdproject.tournamentscandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_tournamentscandidatures_update();
+
+
+--
 -- Name: evaluations evaluations_evaluated_fkey; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
 --
 
@@ -3519,7 +3567,7 @@ ALTER TABLE ONLY bdproject.tournaments
 
 
 --
--- Name: tournamentscandidatures tournamentscandidatures_teams_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: andreo
+-- Name: tournamentscandidatures tournamentscandidatures_teams_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
 --
 
 ALTER TABLE ONLY bdproject.tournamentscandidatures
@@ -3527,7 +3575,7 @@ ALTER TABLE ONLY bdproject.tournamentscandidatures
 
 
 --
--- Name: tournamentscandidatures tournamentscandidatures_tournaments_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: andreo
+-- Name: tournamentscandidatures tournamentscandidatures_tournaments_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
 --
 
 ALTER TABLE ONLY bdproject.tournamentscandidatures
@@ -3535,7 +3583,7 @@ ALTER TABLE ONLY bdproject.tournamentscandidatures
 
 
 --
--- Name: tournamentscandidatures tournamentscandidatures_users_username_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: andreo
+-- Name: tournamentscandidatures tournamentscandidatures_users_username_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
 --
 
 ALTER TABLE ONLY bdproject.tournamentscandidatures
