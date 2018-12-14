@@ -984,16 +984,19 @@ declare
   livello int ;
 begin
 
-if(new.tournamentsteams is not null) then raise exception 'Aggiungere le squadre successivamente tramite update.';end if ;
 if(new.ttype='italiana')then
-    if(new.teamsNumber<3)then raise exception 'Impossibile creare il torneo; il numero di squadre non è una potenza di 2.';end if;
-    numberOfMatch:=new.teamsnumber*(new.teamsnumber-1)/2;
-
+    if(new.teamsNumber<3)then raise exception 'Impossibile creare il torneo; il numero di squadre non è sufficente.';end if;
+    --to be done
   else if(new.ttype='eliminazione diretta')then
         if(mod(new.teamsNumber,2)!=0 or new.teamsNumber<4)then raise exception 'Impossibile creare il torneo; il numero di squadre non è una potenza di 2.';end if;
         livello:=log(2,new.teamsnumber)-1;
-        while(livello>=0) loop
+        while(livello>0) loop
           numberOfMatch:=numberOfMatch+power(2,livello);
+          i:=1;
+          while (i<=numberOfMatch) loop
+          insert into matches (id,building, organizedon, tournament, admin, category,phase) VALUES
+                              (default,null,current_date,new.name,new.manager,new.category,livello);
+          end loop;
           livello:=livello-1;
         end loop;
       else--eliminazione mista
@@ -1001,11 +1004,7 @@ if(new.ttype='italiana')then
         --il trigger match insert permette l'inserimento manuale per questa tipologia di torneo
       end if;
 end if;
-i:=1;
-while (i<=numberOfMatch) loop
-  insert into matches (id,building, organizedon, tournament, admin, category) VALUES
-                      (default,null,current_date,new.name,new.manager,new.category);
-end loop;
+
 
 end;
 $$;
@@ -2028,7 +2027,6 @@ CREATE TABLE bdproject.tournaments (
     name character varying(64) NOT NULL,
     ttype bdproject.girone DEFAULT 'italiana'::bdproject.girone NOT NULL,
     manager character varying(64) NOT NULL,
-    tournamentsteams character varying(64)[],
     teamsnumber integer DEFAULT 2 NOT NULL,
     state bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
     category bdproject.sport,
@@ -2038,6 +2036,20 @@ CREATE TABLE bdproject.tournaments (
 
 
 ALTER TABLE bdproject.tournaments OWNER TO postgres;
+
+--
+-- Name: tournamentscandidatures; Type: TABLE; Schema: bdproject; Owner: andreo
+--
+
+CREATE TABLE bdproject.tournamentscandidatures (
+    team character varying(64) NOT NULL,
+    tournament character varying(64) NOT NULL,
+    confirmed character varying(64),
+    CONSTRAINT checkconfirmer CHECK (((confirmed IS NULL) OR bdproject.sameadmintournaments(tournament, confirmed)))
+);
+
+
+ALTER TABLE bdproject.tournamentscandidatures OWNER TO andreo;
 
 --
 -- Name: users_photo_seq; Type: SEQUENCE; Schema: bdproject; Owner: postgres
@@ -2482,7 +2494,15 @@ squadra2	rosso	tennis	team2desc	team2notes	armaninoandrea	open
 -- Data for Name: tournaments; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.tournaments (name, ttype, manager, tournamentsteams, teamsnumber, state, category, winner) FROM stdin;
+COPY bdproject.tournaments (name, ttype, manager, teamsnumber, state, category, winner) FROM stdin;
+\.
+
+
+--
+-- Data for Name: tournamentscandidatures; Type: TABLE DATA; Schema: bdproject; Owner: andreo
+--
+
+COPY bdproject.tournamentscandidatures (team, tournament, confirmed) FROM stdin;
 \.
 
 
@@ -3236,6 +3256,13 @@ CREATE TRIGGER trigger_teamcandidatures_update AFTER UPDATE ON bdproject.teamcan
 
 
 --
+-- Name: tournaments trigger_tournaments_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_tournaments_insert AFTER UPDATE ON bdproject.tournaments FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_tournaments_insert();
+
+
+--
 -- Name: evaluations evaluations_evaluated_fkey; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
 --
 
@@ -3489,6 +3516,30 @@ ALTER TABLE ONLY bdproject.tournaments
 
 ALTER TABLE ONLY bdproject.tournaments
     ADD CONSTRAINT tournaments_teams_name_fk FOREIGN KEY (winner) REFERENCES bdproject.teams(name) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: tournamentscandidatures tournamentscandidatures_teams_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: andreo
+--
+
+ALTER TABLE ONLY bdproject.tournamentscandidatures
+    ADD CONSTRAINT tournamentscandidatures_teams_name_fk FOREIGN KEY (team) REFERENCES bdproject.teams(name);
+
+
+--
+-- Name: tournamentscandidatures tournamentscandidatures_tournaments_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: andreo
+--
+
+ALTER TABLE ONLY bdproject.tournamentscandidatures
+    ADD CONSTRAINT tournamentscandidatures_tournaments_name_fk FOREIGN KEY (tournament) REFERENCES bdproject.tournaments(name);
+
+
+--
+-- Name: tournamentscandidatures tournamentscandidatures_users_username_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: andreo
+--
+
+ALTER TABLE ONLY bdproject.tournamentscandidatures
+    ADD CONSTRAINT tournamentscandidatures_users_username_fk FOREIGN KEY (confirmed) REFERENCES bdproject.users(username);
 
 
 --
