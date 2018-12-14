@@ -136,6 +136,45 @@ CREATE TYPE bdproject.state AS ENUM (
 ALTER TYPE bdproject.state OWNER TO postgres;
 
 --
+-- Name: assignmatch(character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.assignmatch(tour character varying, phase integer) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+declare
+  manager  varchar(64);
+  temprow varchar(64);
+  matchcursor cursor is
+    select id
+    from matches
+        where tournament = tour;
+BEGIN
+  -- per ogni elemento del cursore inserisce ciascuna delle squadre
+  select manager from tournaments where name = tour limit 1 into manager;
+  for matchno in matchcursor
+    loop
+    for temprow in select tc.team
+                     from tournamentscandidatures tc
+                     where tc.tournament = tour
+                       and team not in (select team
+                                        from matches mc
+                                               join matchcandidatures m2 on mc.id = m2.match
+                                        where mc.tournament = tour
+                                          and mc.phase = phase)
+                     limit 2
+
+    loop
+      insert into matchcandidatures values (temprow, matchno, manager);
+    end loop;
+  end loop;
+END;
+$$;
+
+
+ALTER FUNCTION bdproject.assignmatch(tour character varying, phase integer) OWNER TO strafo;
+
+--
 -- Name: aux_competitors(bigint); Type: FUNCTION; Schema: bdproject; Owner: andreo
 --
 
