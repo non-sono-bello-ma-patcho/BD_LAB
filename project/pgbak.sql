@@ -139,7 +139,7 @@ ALTER TYPE bdproject.state OWNER TO postgres;
 -- Name: assignmatch(character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.assignmatch(tour character varying, phase integer) RETURNS integer
+CREATE FUNCTION bdproject.assignmatch(tour character varying, phase integer) RETURNS void
     LANGUAGE plpgsql
     AS $$
 declare
@@ -1068,6 +1068,25 @@ $$;
 
 
 ALTER FUNCTION bdproject.proc_trigger_tournamentscandidatures_insert() OWNER TO strafo;
+
+--
+-- Name: proc_trigger_tournamentscandidatures_update(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.proc_trigger_tournamentscandidatures_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+begin
+  if(tournament_full(new.tournament)) then
+    update tournaments set state='closed' where tournaments.name=new.tournament;
+    execute assignmatch(new.tournament,0);
+  end if;
+
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.proc_trigger_tournamentscandidatures_update() OWNER TO strafo;
 
 --
 -- Name: referee_assigned(bigint); Type: FUNCTION; Schema: bdproject; Owner: postgres
@@ -3324,6 +3343,13 @@ CREATE TRIGGER trigger_tournaments_insert AFTER INSERT ON bdproject.tournaments 
 --
 
 CREATE TRIGGER trigger_tournamentscandidatures_insert AFTER INSERT ON bdproject.tournamentscandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_tournamentscandidatures_insert();
+
+
+--
+-- Name: tournamentscandidatures trigger_tournamentscandidatures_update; Type: TRIGGER; Schema: bdproject; Owner: postgres
+--
+
+CREATE TRIGGER trigger_tournamentscandidatures_update AFTER UPDATE ON bdproject.tournamentscandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_tournamentscandidatures_update();
 
 
 --
