@@ -1070,22 +1070,6 @@ $$;
 ALTER FUNCTION bdproject.proc_trigger_tournamentscandidatures_insert() OWNER TO strafo;
 
 --
--- Name: proc_trigger_tournamentscandidatures_update(); Type: FUNCTION; Schema: bdproject; Owner: strafo
---
-
-CREATE FUNCTION bdproject.proc_trigger_tournamentscandidatures_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-begin
-   
-	return new;
-end;
-$$;
-
-
-ALTER FUNCTION bdproject.proc_trigger_tournamentscandidatures_update() OWNER TO strafo;
-
---
 -- Name: referee_assigned(bigint); Type: FUNCTION; Schema: bdproject; Owner: postgres
 --
 
@@ -1293,13 +1277,13 @@ COMMENT ON FUNCTION bdproject.team_min(teamname character varying) IS 'verifica 
 CREATE FUNCTION bdproject.tournament_full(tournament character varying) RETURNS boolean
     LANGUAGE plpgsql
     AS $$
+declare
+numerosquadre int;
+n int:= (select teamsnumber  from tournaments where tournaments.name=tournament);
 begin
-	return array_length(tournament,1) >
-	(
-		select tournaments.teamsnumber
-		from tournaments
-    where name=tournament
-	);
+	select count(*)
+	from tournamentscandidatures where tournamentscandidatures.tournament=tournament and confirmed is not null into numerosquadre;
+	return (numerosquadre=n);
 end;
 $$;
 
@@ -3332,7 +3316,7 @@ CREATE TRIGGER trigger_teamcandidatures_update AFTER UPDATE ON bdproject.teamcan
 -- Name: tournaments trigger_tournaments_insert; Type: TRIGGER; Schema: bdproject; Owner: postgres
 --
 
-CREATE TRIGGER trigger_tournaments_insert AFTER UPDATE ON bdproject.tournaments FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_tournaments_insert();
+CREATE TRIGGER trigger_tournaments_insert AFTER INSERT ON bdproject.tournaments FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_tournaments_insert();
 
 
 --
@@ -3340,13 +3324,6 @@ CREATE TRIGGER trigger_tournaments_insert AFTER UPDATE ON bdproject.tournaments 
 --
 
 CREATE TRIGGER trigger_tournamentscandidatures_insert AFTER INSERT ON bdproject.tournamentscandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_tournamentscandidatures_insert();
-
-
---
--- Name: tournamentscandidatures trigger_tournamentscandidatures_update; Type: TRIGGER; Schema: bdproject; Owner: postgres
---
-
-CREATE TRIGGER trigger_tournamentscandidatures_update AFTER INSERT ON bdproject.tournamentscandidatures FOR EACH ROW EXECUTE PROCEDURE bdproject.proc_trigger_tournamentscandidatures_update();
 
 
 --
