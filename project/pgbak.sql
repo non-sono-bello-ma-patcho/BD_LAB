@@ -148,7 +148,7 @@ declare
   matchcursor cursor is
     select id
     from matches
-        where tournament = tour;
+        where tournament = tour and matches.phase=phase;
 BEGIN
   -- per ogni elemento del cursore inserisce ciascuna delle squadre
   select manager from tournaments where name = tour limit 1 into manager;
@@ -156,7 +156,7 @@ BEGIN
     loop
     for temprow in select tc.team
                      from tournamentscandidatures tc
-                     where tc.tournament = tour
+                     where tc.tournament = tour and tc.confirmed is not null
                        and team not in (select team
                                         from matches mc
                                                join matchcandidatures m2 on mc.id = m2.match
@@ -1076,10 +1076,12 @@ ALTER FUNCTION bdproject.proc_trigger_tournamentscandidatures_insert() OWNER TO 
 CREATE FUNCTION bdproject.proc_trigger_tournamentscandidatures_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
+declare 
+maxlevel int:=(select max(m.phase) from matches m where new.tournament=m.tournament);
 begin
   if(tournament_full(new.tournament)) then
     update tournaments set state='closed' where tournaments.name=new.tournament;
-    execute assignmatch(new.tournament,0);
+    execute assignmatch(new.tournament,maxlevel);
   end if;
 
 end;
