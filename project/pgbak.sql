@@ -973,6 +973,10 @@ declare
 			from matchcandidatures inner join teamcandidatures on matchcandidatures.team=teamcandidatures.team
 			where matchcandidatures.match=new.match and matchcandidatures.confirmed is not null  and teamcandidatures.admin is not null ;
 	categoria bdproject.sport;
+  tournament varchar(64)=(select distinct tournament from outcomes join matches m on outcomes.match = m.id where m.matches.id=new.match);
+  teamset refcursor;
+  phase int =(select distinct phase from outcomes join matches m on outcomes.match = m.id where m.matches.id=new.match);
+  _team varchar(64);
 begin
 	--esiste la partita in questione? sì perchè match è chiave primaria sulla tabella match--
 
@@ -996,6 +1000,29 @@ begin
 	loop
 		execute incrementapartitegiocateutente(categoria,partecipante.applicant);
 	end loop;
+
+	--se partita fa parte di un torneo controlla se la fase è già terminata e assegna i vincitori alle partite successive
+	if(tournament is not null) then
+		if(fase_terminata(tournament,phase))then
+			teamset:=calcola_squadre_vincitrici(tournament,phase );
+			--open teamset;
+			fetch teamset into _team;
+		  if(phase>1)then
+		    while teamset%FOUND loop
+					execute assignmatch(_team,tournament,phase-1);
+					fetch teamset into _team;
+				end loop;
+				execute acceptmatches(tournament, phase-1);
+		  else--setta vincitore
+				update tournaments
+		    set tournaments.winner=_team
+		    where tournaments.name=tournament;
+		  end if;
+
+		end if ;
+		close teamset;
+	end if;
+
 	return new;
 end;
 $$;
