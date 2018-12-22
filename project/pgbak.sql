@@ -393,6 +393,21 @@ COMMENT ON FUNCTION bdproject.count_player(teamname character varying) IS 'Conta
 
 
 --
+-- Name: fase_terminata(character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.fase_terminata(_tournament character varying, _phase integer) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+begin
+	return true;
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.fase_terminata(_tournament character varying, _phase integer) OWNER TO strafo;
+
+--
 -- Name: incrementapartitegiocateutente(bdproject.sport, character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
