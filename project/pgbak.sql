@@ -136,43 +136,56 @@ CREATE TYPE bdproject.state AS ENUM (
 ALTER TYPE bdproject.state OWNER TO postgres;
 
 --
--- Name: assignmatch(character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: strafo
+-- Name: acceptmatches(character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: andreo
 --
 
-CREATE FUNCTION bdproject.assignmatch(tour character varying, phase integer) RETURNS void
+CREATE FUNCTION bdproject.acceptmatches(tour character varying, phase integer) RETURNS void
     LANGUAGE plpgsql
     AS $$
 declare
   manager  varchar(64);
-  temprow varchar(64);
-  matchcursor cursor is
-    select id
-    from matches
-        where tournament = tour and matches.phase=phase;
 BEGIN
-  -- per ogni elemento del cursore inserisce ciascuna delle squadre
   select manager from tournaments where name = tour limit 1 into manager;
-  for matchno in matchcursor
-    loop
-    for temprow in select tc.team
-                     from tournamentscandidatures tc
-                     where tc.tournament = tour and tc.confirmed is not null
-                       and team not in (select team
-                                        from matches mc
-                                               join matchcandidatures m2 on mc.id = m2.match
-                                        where mc.tournament = tour
-                                          and mc.phase = phase)
-                     limit 2
-
-    loop
-      insert into matchcandidatures values (temprow, matchno, manager);
-    end loop;
-  end loop;
+  update matchcandidatures mc
+   set confirmed = manager
+   where id in ( select id
+                  from matches m
+                  where tournament = tour and m.phase = phase
+                  );
 END;
 $$;
 
 
-ALTER FUNCTION bdproject.assignmatch(tour character varying, phase integer) OWNER TO strafo;
+ALTER FUNCTION bdproject.acceptmatches(tour character varying, phase integer) OWNER TO andreo;
+
+--
+-- Name: assignmatch(character varying, character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: andreo
+--
+
+CREATE FUNCTION bdproject.assignmatch(team character varying, tour character varying, phase integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+declare
+  manager  varchar(64);
+  matchno bigint;
+
+BEGIN
+  -- per ogni elemento del cursore inserisce ciascuna delle squadre
+  select manager from tournaments where name = tour limit 1 into manager;
+  select id
+    from matches
+        where tournament = tour and matches.phase=phase
+        not in (  select id
+                  from matches
+                  right outer join matchcandidatures m on matches.id = m."match"
+                  where tournament = tour and matches.phase=phase)
+                  limit 1 into matchno;
+      insert into matchcandidatures values (team, matchno, manager);
+END;
+$$;
+
+
+ALTER FUNCTION bdproject.assignmatch(team character varying, tour character varying, phase integer) OWNER TO andreo;
 
 --
 -- Name: aux_competitors(bigint); Type: FUNCTION; Schema: bdproject; Owner: andreo
@@ -282,6 +295,46 @@ $$;
 
 
 ALTER FUNCTION bdproject.aux_workingdays(cdate date) OWNER TO andreo;
+
+--
+-- Name: calcola_squadre_vincitrici(character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.calcola_squadre_vincitrici(_tour character varying, _phase integer) RETURNS refcursor
+    LANGUAGE plpgsql
+    AS $$
+declare
+  teamset refcursor;
+BEGIN
+open teamset for
+  select team
+    from outcomes o1 join matches m1  on o1.match = m1.id
+    where m1.tournament=_tour
+    and m1.phase=_phase
+    and
+      (
+        (
+          (m1.category='calcio'or m1.category='basket')
+          and
+          (o1.score>(select o2.score from outcomes o2 where o2.match=m1.id and o2.team<>o1.team))
+
+        )
+        or
+        (
+          (m1.category='tennis'or m1.category='volley')
+          and
+          (o1.win>(select o3.score from outcomes o3 where o3.match=m1.id and o3.team<>o1.team))
+
+        )
+
+
+      );
+return teamset;
+END;
+$$;
+
+
+ALTER FUNCTION bdproject.calcola_squadre_vincitrici(_tour character varying, _phase integer) OWNER TO strafo;
 
 --
 -- Name: count_match_played_by_category(character varying, bdproject.sport); Type: FUNCTION; Schema: bdproject; Owner: strafo
@@ -1348,6 +1401,35 @@ ALTER FUNCTION bdproject.valid_team(teamname character varying) OWNER TO strafo;
 COMMENT ON FUNCTION bdproject.valid_team(teamname character varying) IS 'controlla se il numero di giocatori è:
 categoria.min<=numero_giocatori<=categoria.max';
 
+
+--
+-- Name: assignmatch(character varying, character varying, integer); Type: FUNCTION; Schema: public; Owner: andreo
+--
+
+CREATE FUNCTION public.assignmatch(team character varying, tour character varying, phase integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+declare
+  manager  varchar(64);
+  matchno bigint;
+
+BEGIN
+  -- per ogni elemento del cursore inserisce ciascuna delle squadre
+  select manager from tournaments where name = tour limit 1 into manager;
+  select id
+    from matches
+        where tournament = tour and matches.phase=phase
+        not in (  select id
+                  from matches
+                  right outer join matchcandidatures m on matches.id = m."match"
+                  where tournament = tour and matches.phase=phase)
+                  limit 1 into matchno;
+      insert into matchcandidatures values (team, matchno, manager);
+END;
+$$;
+
+
+ALTER FUNCTION public.assignmatch(team character varying, tour character varying, phase integer) OWNER TO andreo;
 
 --
 -- Name: aux_referee(bigint); Type: FUNCTION; Schema: public; Owner: andreo
