@@ -399,8 +399,25 @@ COMMENT ON FUNCTION bdproject.count_player(teamname character varying) IS 'Conta
 CREATE FUNCTION bdproject.fase_terminata(_tournament character varying, _phase integer) RETURNS boolean
     LANGUAGE plpgsql
     AS $$
+declare
+  ttype bdproject.sport=(select tournaments.ttype from tournaments where tournaments.name=_tournament);
+  numberofmatches int;
+  n int;
 begin
-	return true;
+
+if(ttype='italiana')then
+
+  else if(ttype='eliminazione diretta')then
+        numberofmatches:=power(2,_phase);
+        select count(distinct team) from outcomes join matches on outcomes.match = matches.id where matches.tournament=_tournament and matches.phase=_phase into n;
+        return (n=numberofmatches);
+      else--eliminazione mista
+        --gestito manualmente dall'utente
+        --il trigger match insert permette l'inserimento manuale per questa tipologia di torneo
+      end if;
+end if;
+
+return true;
 end;
 $$;
 
@@ -1007,7 +1024,7 @@ begin
 			teamset:=calcola_squadre_vincitrici(tournament,phase );
 			--open teamset;
 			fetch teamset into _team;
-		  if(phase>1)then
+		  if(phase>0)then
 		    while teamset%FOUND loop
 					execute assignmatch(_team,tournament,phase-1);
 					fetch teamset into _team;
@@ -1124,7 +1141,7 @@ if(new.ttype='italiana')then
   else if(new.ttype='eliminazione diretta')then
         if(mod(new.teamsNumber,2)!=0 or new.teamsNumber<4)then raise exception 'Impossibile creare il torneo; il numero di squadre non è una potenza di 2.';end if;
         livello:=log(2,new.teamsnumber)-1;
-        while(livello>0) loop
+        while(livello>=0) loop
           numberOfMatch:=numberOfMatch+power(2,livello);
           i:=1;
           while (i<=numberOfMatch) loop
