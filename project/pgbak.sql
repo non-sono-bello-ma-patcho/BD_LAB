@@ -188,6 +188,35 @@ $$;
 ALTER FUNCTION bdproject.assignmatch(team character varying, tour character varying, phase integer) OWNER TO andreo;
 
 --
+-- Name: aux_assignmatch(character varying, character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.aux_assignmatch(_team character varying, _tour character varying, _phase integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+declare
+  _manager  varchar(64);
+  _matchno bigint;
+
+BEGIN
+  -- per ogni elemento del cursore inserisce ciascuna delle squadre
+  select manager from tournaments where name = _tour limit 1 into _manager;
+  select id
+    from matches
+        where tournament = _tour and matches.phase=_phase
+        not in (  select id
+                  from matches
+                  right outer join matchcandidatures m on matches.id = m."match"
+                  where tournament = _tour and matches.phase=_phase)
+                  limit 1 into _matchno;
+      insert into matchcandidatures values (_team, _matchno, _manager);
+END;
+$$;
+
+
+ALTER FUNCTION bdproject.aux_assignmatch(_team character varying, _tour character varying, _phase integer) OWNER TO strafo;
+
+--
 -- Name: aux_competitors(bigint); Type: FUNCTION; Schema: bdproject; Owner: andreo
 --
 
@@ -1026,7 +1055,7 @@ begin
 			fetch teamset into _team;
 		  if(phase>0)then
 		    while teamset%FOUND loop
-					execute assignmatch(_team,tournament,phase-1);
+					execute aux_assignmatch(_team,tournament,phase-1);
 					fetch teamset into _team;
 				end loop;
 				execute acceptmatches(tournament, phase-1);
@@ -1196,7 +1225,7 @@ begin
     -- creo il cursore su cui iterare
     for teamname in competitor
     loop
-      execute assignmatch(teamname, new.tournament,maxlevel);
+      execute aux_assignmatch(teamname.team, new.tournament,maxlevel);
       end loop;
     execute acceptmatches(new.tournament, maxlevel);
   end if;
