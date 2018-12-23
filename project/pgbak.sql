@@ -2485,7 +2485,7 @@ COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstat
 -- Name: matches_id_seq; Type: SEQUENCE SET; Schema: bdproject; Owner: postgres
 --
 
-SELECT pg_catalog.setval('bdproject.matches_id_seq', 34, true);
+SELECT pg_catalog.setval('bdproject.matches_id_seq', 36, true);
 
 
 --
@@ -2672,10 +2672,6 @@ squadra2	ferrariandrea	\N	role1
 squadra2	scottiandrea	\N	role1
 squadra2	storaceandrea	\N	role1
 squadra2	paganiandrea	\N	role1
-Non sono bello ma patcho	polveriniadriana	\N	player
-Non sono bello ma patcho	straforinigemma	\N	player
-Non sono bello ma patcho	simoniandrea	\N	player
-Non sono bello ma patcho	armaninoadamo	\N	player
 33_1	straforiniandrea	straforiniandrea	player
 33_1	conteandrea	straforiniandrea	player
 33_1	zazzeraandrea	straforiniandrea	player
@@ -2702,10 +2698,10 @@ Non sono bello ma patcho	armaninoadamo	\N	player
 COPY bdproject.teams (name, coloremaglia, category, description, notes, admin, state) FROM stdin;
 Team1	\N	basket	\N	\N	malattoandrea	closed
 Non sono bello ma patcho	\N	basket	ci mettiamo impegno	\N	straforiniandrea	closed
-squadra1	blu	tennis	team1desc	team1notes	zazzeraandrea	closed
 squadra2	rosso	tennis	team2desc	team2notes	armaninoandrea	open
 33_1	\N	basket	\N	\N	straforiniandrea	open
 33_2	\N	basket	\N	\N	straforiniandrea	open
+squadra1	blu	tennis	team1desc	team1notes	zazzeraandrea	open
 \.
 
 
