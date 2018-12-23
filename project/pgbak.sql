@@ -967,7 +967,7 @@ begin
           raise exception 'L''admin % del match non corrisponde al manager del torneo % associato.',new.admin,new.tournament;
         end if;
       else
-          raise exception 'Le partite dei tornei vengono inserite automaticamente.(tranne per il misto)';
+          --raise exception 'Le partite dei tornei vengono inserite automaticamente.(tranne per il misto)';
       end if;
   end if ;
 	return new;
@@ -1131,7 +1131,6 @@ CREATE FUNCTION bdproject.proc_trigger_tournaments_insert() RETURNS trigger
     AS $$
 declare
   i int;
-  numberOfMatch int=0;
   livello int ;
 begin
 
@@ -1142,11 +1141,11 @@ if(new.ttype='italiana')then
         if(mod(new.teamsNumber,2)!=0 or new.teamsNumber<4)then raise exception 'Impossibile creare il torneo; il numero di squadre non è una potenza di 2.';end if;
         livello:=log(2,new.teamsnumber)-1;
         while(livello>=0) loop
-          numberOfMatch:=numberOfMatch+power(2,livello);
           i:=1;
-          while (i<=numberOfMatch) loop
+          while (i<=power(2,livello)) loop
           insert into matches (id,building, organizedon, tournament, admin, category,phase) VALUES
-                              (default,null,current_date,new.name,new.manager,new.category,livello);
+                              (default,new.building,current_date,new.name,new.manager,new.category,livello);
+          i:=i+1;
           end loop;
           livello:=livello-1;
         end loop;
@@ -1156,7 +1155,7 @@ if(new.ttype='italiana')then
       end if;
 end if;
 
-
+return new;
 end;
 $$;
 
@@ -1190,10 +1189,16 @@ CREATE FUNCTION bdproject.proc_trigger_tournamentscandidatures_update() RETURNS 
     AS $$
 declare 
 maxlevel int:=(select max(m.phase) from matches m where new.tournament=m.tournament);
+competitor cursor for select team from tournamentscandidatures where tournament = new.tournament and confirmed is not null;
 begin
   if(tournament_full(new.tournament)) then
     update tournaments set state='closed' where tournaments.name=new.tournament;
-    execute assignmatch(new.tournament,maxlevel);
+    -- creo il cursore su cui iterare
+    for teamname in competitor
+    loop
+      execute assignmatch(teamname, new.tournament,maxlevel);
+      end loop;
+    execute acceptmatches(new.tournament, maxlevel);
   end if;
 
 end;
@@ -1407,21 +1412,21 @@ COMMENT ON FUNCTION bdproject.team_min(teamname character varying) IS 'verifica 
 -- Name: tournament_full(character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.tournament_full(tournament character varying) RETURNS boolean
+CREATE FUNCTION bdproject.tournament_full(_tournament character varying) RETURNS boolean
     LANGUAGE plpgsql
     AS $$
 declare
 numerosquadre int;
-n int:= (select teamsnumber  from tournaments where tournaments.name=tournament);
+n int:= (select teamsnumber  from tournaments where tournaments.name=_tournament);
 begin
 	select count(*)
-	from tournamentscandidatures where tournamentscandidatures.tournament=tournament and confirmed is not null into numerosquadre;
+	from tournamentscandidatures where tournamentscandidatures.tournament=_tournament and confirmed is not null into numerosquadre;
 	return (numerosquadre=n);
 end;
 $$;
 
 
-ALTER FUNCTION bdproject.tournament_full(tournament character varying) OWNER TO strafo;
+ALTER FUNCTION bdproject.tournament_full(_tournament character varying) OWNER TO strafo;
 
 --
 -- Name: valid_team(character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
@@ -2250,6 +2255,7 @@ CREATE TABLE bdproject.tournaments (
     state bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
     category bdproject.sport,
     winner character varying(64) DEFAULT NULL::character varying,
+    building character varying(64) NOT NULL,
     CONSTRAINT manager_premium CHECK (public.ispremium(manager))
 );
 
@@ -2345,7 +2351,6 @@ ALTER TABLE ONLY bdproject.refereecandidatures ALTER COLUMN match SET DEFAULT ne
 --
 
 COPY bdproject.buildings (name, address, phonenumber, email, longitude, latitude, opening, closure) FROM stdin;
-A. S. D. Castelletto 	2, Via Di San Pantaleo (Genova) 	010 810006	ASDC@alice.it 	4.0128	109.0448	08:00:00	19:00:00
 A.s. Gymnotecnica 	9, Via San Pio X (Genova) 	010 318954	AG@supereva.it 	33.4111	177.1625	08:00:00	19:00:00
 A.s. Karate Team Bruno Da Boit 	17/R, Via Vicenza (Sampierdarena) 	010 415856	AKTBDB@fastweb.it 	76.8250	70.7949	08:00:00	19:00:00
 A.s. Karate Team Bruno Da Boit Palestra Karate Kung-fu Taichi 	17/A, Via Vicenza (Genova) 	010 415856	AKTBDBPKKT@atlavia.it 	41.6041	27.9673	08:00:00	19:00:00
@@ -2408,6 +2413,7 @@ Tennis Club Le Palme Campi Da Tennis 	4, Via Campanella Tommaso (Genova) 	010 31
 Tiro A Segno Nazionale 	31, Via Vernazza (Genova) 	010 388888	TASN@worldonline.it 	14.0898	14.1166	08:00:00	19:00:00
 Tiro Al Segno 	50, Via Al Poligono Di Quezzi (Genova) 	010 389100	TAS@tele2.it 	22.7039	40.0484	08:00:00	19:00:00
 Virgin Active Genova 	153/R, Via Paolo Mantovani (Sampierdarena) 	800 914555	VAG@atlavia.it 	75.9089	70.7233	08:00:00	19:00:00
+A. S. D. Castelletto	2, Via Di San Pantaleo (Genova) 	010 810006	ASDC@alice.it 	4.0128	109.0448	08:00:00	19:00:00
 \.
 
 
@@ -2477,7 +2483,10 @@ SELECT pg_catalog.setval('bdproject.matchcandidatures_match_seq', 1, false);
 --
 
 COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category, phase) FROM stdin;
-33	A. S. D. Castelletto 	2018-11-30	2018-11-30	\N	closed	straforiniandrea	basket	\N
+409173	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	open	gardellaandrea	basket	1
+409174	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	open	gardellaandrea	basket	1
+409175	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	open	gardellaandrea	basket	0
+33	A. S. D. Castelletto	2018-11-30	2018-11-30	\N	closed	straforiniandrea	basket	\N
 \.
 
 
@@ -2485,7 +2494,7 @@ COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstat
 -- Name: matches_id_seq; Type: SEQUENCE SET; Schema: bdproject; Owner: postgres
 --
 
-SELECT pg_catalog.setval('bdproject.matches_id_seq', 36, true);
+SELECT pg_catalog.setval('bdproject.matches_id_seq', 409175, true);
 
 
 --
@@ -2643,6 +2652,7 @@ Terapia della neuro e psicomotricità dell età evolutiva
 --
 
 COPY bdproject.teamcandidatures (team, applicant, admin, role) FROM stdin;
+squadratorneo4	contealberto	contealberto	undefined
 Non sono bello ma patcho	straforiniandrea	straforiniandrea	ah boh
 Non sono bello ma patcho	zazzeraandrea	straforiniandrea	ah boh
 Non sono bello ma patcho	conteaurora	straforiniandrea	ah boh
@@ -2651,6 +2661,7 @@ Non sono bello ma patcho	contegemma	straforiniandrea	ah boh
 Non sono bello ma patcho	malattomonica	straforiniandrea	ah boh
 Non sono bello ma patcho	armaninoaurora	straforiniandrea	undefined
 Non sono bello ma patcho	tascaaurora	straforiniandrea	undefined
+squadratorneo4	saperdigaetano	contealberto	undefined
 Team1	zolezziandrea	malattoandrea	undefined
 Team1	oliveriandrea	malattoandrea	undefined
 Team1	malattoandrea	malattoandrea	undefined
@@ -2672,6 +2683,8 @@ squadra2	ferrariandrea	\N	role1
 squadra2	scottiandrea	\N	role1
 squadra2	storaceandrea	\N	role1
 squadra2	paganiandrea	\N	role1
+squadratorneo3	tascaaurora	tascaaurora	undefined
+squadratorneo3	tavellaaurora	tascaaurora	undefined
 33_1	straforiniandrea	straforiniandrea	player
 33_1	conteandrea	straforiniandrea	player
 33_1	zazzeraandrea	straforiniandrea	player
@@ -2702,6 +2715,8 @@ squadra2	rosso	tennis	team2desc	team2notes	armaninoandrea	open
 33_1	\N	basket	\N	\N	straforiniandrea	open
 33_2	\N	basket	\N	\N	straforiniandrea	open
 squadra1	blu	tennis	team1desc	team1notes	zazzeraandrea	open
+squadratorneo3	\N	basket	torneoprova	ciaozio3	tascaaurora	open
+squadratorneo4	\N	basket	torneoprova	ciaozio4	contealberto	open
 \.
 
 
@@ -2709,7 +2724,8 @@ squadra1	blu	tennis	team1desc	team1notes	zazzeraandrea	open
 -- Data for Name: tournaments; Type: TABLE DATA; Schema: bdproject; Owner: postgres
 --
 
-COPY bdproject.tournaments (name, ttype, manager, teamsnumber, state, category, winner) FROM stdin;
+COPY bdproject.tournaments (name, ttype, manager, teamsnumber, state, category, winner, building) FROM stdin;
+torneotest	eliminazione diretta	gardellaandrea	4	open	basket	\N	A.s. Gymnotecnica 
 \.
 
 
@@ -2718,6 +2734,10 @@ COPY bdproject.tournaments (name, ttype, manager, teamsnumber, state, category, 
 --
 
 COPY bdproject.tournamentscandidatures (team, tournament, confirmed) FROM stdin;
+squadratorneo3	torneotest	\N
+squadratorneo4	torneotest	\N
+Team1	torneotest	\N
+Non sono bello ma patcho	torneotest	\N
 \.
 
 
@@ -3721,6 +3741,14 @@ ALTER TABLE ONLY bdproject.teams
 
 ALTER TABLE ONLY bdproject.teams
     ADD CONSTRAINT teams_categories_name_fk FOREIGN KEY (category) REFERENCES bdproject.categories(name);
+
+
+--
+-- Name: tournaments tournaments_buildings_name_fk; Type: FK CONSTRAINT; Schema: bdproject; Owner: postgres
+--
+
+ALTER TABLE ONLY bdproject.tournaments
+    ADD CONSTRAINT tournaments_buildings_name_fk FOREIGN KEY (building) REFERENCES bdproject.buildings(name) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
