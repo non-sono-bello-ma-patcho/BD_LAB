@@ -195,21 +195,18 @@ CREATE FUNCTION bdproject.aux_assignmatch(_team character varying, _tour charact
     LANGUAGE plpgsql
     AS $$
 declare
-  _manager  varchar(64);
+  _manager  varchar(64)=(select manager from tournaments where tournaments.name = _tour limit 1 );
   _matchno bigint;
-
 BEGIN
-  -- per ogni elemento del cursore inserisce ciascuna delle squadre
-  select manager from tournaments where name = _tour limit 1 into _manager;
-  select id
-    from matches
-        where tournament = _tour and matches.phase=_phase
-        not in (  select id
-                  from matches
-                  right outer join matchcandidatures m on matches.id = m."match"
-                  where tournament = _tour and matches.phase=_phase)
-                  limit 1 into _matchno;
-      insert into matchcandidatures values (_team, _matchno, _manager);
+
+  select matches.id from matches where matches.tournament = _tour and matches.phase=_phase
+        not in (  select id from matches
+                  right outer join matchcandidatures m on matches.id = m.match
+                  where tournament = _tour and matches.phase=_phase
+               )
+  limit 1 into _matchno;
+
+  insert into matchcandidatures values (_team, _matchno, _manager);
 END;
 $$;
 
