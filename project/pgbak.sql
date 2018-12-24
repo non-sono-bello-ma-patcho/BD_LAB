@@ -191,15 +191,17 @@ ALTER FUNCTION bdproject.aux_assignmatch(_team character varying, _tour characte
 -- Name: aux_competitors(bigint); Type: FUNCTION; Schema: bdproject; Owner: andreo
 --
 
-CREATE FUNCTION bdproject.aux_competitors(id bigint) RETURNS character varying[]
+CREATE FUNCTION bdproject.aux_competitors(id bigint) RETURNS text
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  return (
-    select team
+  return array_to_string(
+      array (select team
     from bdproject.matchcandidatures
     where match = id
-    and confirmed notnull
+    and confirmed notnull),
+    ' vs ',
+    '*'
   );
 END;
 $$;
@@ -555,6 +557,34 @@ $$;
 
 
 ALTER FUNCTION bdproject.int_analysis_most_pop_cat() OWNER TO strafo;
+
+--
+-- Name: int_analysis_most_popular_active_tournament(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.int_analysis_most_popular_active_tournament() RETURNS TABLE(team character varying, type character varying)
+    LANGUAGE plpgsql
+    AS $$
+begin
+  return query(
+    
+    select tourc.tournament ,count(*) as partecipanti
+    from tournamentscandidatures tourc join teamcandidatures teamc on tourc.team=teamc.team
+    group by tourc.tournament
+    having count(*)=(
+                    select count(*)
+                    from tournamentscandidatures tourc1 join teamcandidatures teamc1 on tourc1.team=teamc1.team
+                    where tourc1.tournament=tourc.tournament
+      )
+
+
+
+  );
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.int_analysis_most_popular_active_tournament() OWNER TO strafo;
 
 --
 -- Name: int_analysis_woman_cat_course(); Type: FUNCTION; Schema: bdproject; Owner: strafo
@@ -2306,6 +2336,26 @@ CREATE TABLE bdproject.studycourses (
 ALTER TABLE bdproject.studycourses OWNER TO postgres;
 
 --
+-- Name: tournamentprogram; Type: TABLE; Schema: bdproject; Owner: andreo
+--
+
+CREATE TABLE bdproject.tournamentprogram (
+    tournament character varying(64),
+    building character varying(64),
+    organizedon date,
+    id bigint,
+    competitors text,
+    referee character varying,
+    phase integer,
+    winner character varying(64)
+);
+
+ALTER TABLE ONLY bdproject.tournamentprogram REPLICA IDENTITY NOTHING;
+
+
+ALTER TABLE bdproject.tournamentprogram OWNER TO andreo;
+
+--
 -- Name: tournaments; Type: TABLE; Schema: bdproject; Owner: postgres
 --
 
@@ -2532,6 +2582,12 @@ COPY bdproject.matchcandidatures (team, match, confirmed) FROM stdin;
 33_2	33	straforiniandrea
 squadratorneo3	409175	gardellaandrea
 Non sono bello ma patcho	409175	gardellaandrea
+squadratorneo3	409176	gardellaandrea
+squadratorneo4	409176	gardellaandrea
+Team1	409177	gardellaandrea
+Non sono bello ma patcho	409177	gardellaandrea
+squadratorneo3	409178	gardellaandrea
+Non sono bello ma patcho	409178	gardellaandrea
 squadratorneo3	409173	gardellaandrea
 squadratorneo4	409173	gardellaandrea
 Team1	409174	gardellaandrea
@@ -2555,6 +2611,9 @@ COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstat
 409174	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	closed	gardellaandrea	basket	1
 409175	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	closed	gardellaandrea	basket	0
 33	A. S. D. Castelletto	2018-11-30	2018-11-30	\N	closed	straforiniandrea	basket	\N
+409176	A.s. Gymnotecnica 	2018-12-24	2018-12-24	torneotest1	closed	gardellaandrea	basket	1
+409177	A.s. Gymnotecnica 	2018-12-24	2018-12-24	torneotest1	closed	gardellaandrea	basket	1
+409178	A.s. Gymnotecnica 	2018-12-24	2018-12-24	torneotest1	closed	gardellaandrea	basket	0
 \.
 
 
@@ -2562,7 +2621,7 @@ COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstat
 -- Name: matches_id_seq; Type: SEQUENCE SET; Schema: bdproject; Owner: postgres
 --
 
-SELECT pg_catalog.setval('bdproject.matches_id_seq', 409175, true);
+SELECT pg_catalog.setval('bdproject.matches_id_seq', 409178, true);
 
 
 --
@@ -2576,6 +2635,12 @@ COPY bdproject.outcomes (match, score, goleador, win, admin, insertedon, duratio
 409174	1	tavellaandrea	0	gardellaandrea	2018-12-24	00:20:00	Team1
 409175	2	straforiniandrea storacegaetano	0	gardellaandrea	2018-12-24	00:20:00	Non sono bello ma patcho
 409175	1	tascaaurora	0	gardellaandrea	2018-12-24	00:20:00	squadratorneo3
+409176	2	tascaaurora tavellaaurora	0	gardellaandrea	2018-12-24	00:20:00	squadratorneo3
+409176	1	saperdigaetano	0	gardellaandrea	2018-12-24	00:20:00	squadratorneo4
+409177	2	straforiniandrea storacegaetano	0	gardellaandrea	2018-12-24	00:20:00	Non sono bello ma patcho
+409177	1	tavellaandrea	0	gardellaandrea	2018-12-24	00:20:00	Team1
+409178	2	straforiniandrea storacegaetano	0	gardellaandrea	2018-12-24	00:20:00	Non sono bello ma patcho
+409178	1	tascaaurora	0	gardellaandrea	2018-12-24	00:20:00	squadratorneo3
 33	0	storaceandrea	0	straforiniandrea	2018-12-07	01:00:00	33_1
 33	3	storaceandrea	0	straforiniandrea	2018-12-07	01:00:00	33_2
 \.
@@ -2799,6 +2864,7 @@ squadratorneo4	\N	basket	torneoprova	ciaozio4	contealberto	open
 
 COPY bdproject.tournaments (name, ttype, manager, teamsnumber, state, category, winner, building) FROM stdin;
 torneotest	eliminazione diretta	gardellaandrea	4	closed	basket	Non sono bello ma patcho	A.s. Gymnotecnica 
+torneotest1	eliminazione diretta	gardellaandrea	6	closed	basket	Non sono bello ma patcho	A.s. Gymnotecnica 
 \.
 
 
@@ -2811,6 +2877,9 @@ squadratorneo3	torneotest	gardellaandrea
 squadratorneo4	torneotest	gardellaandrea
 Team1	torneotest	gardellaandrea
 Non sono bello ma patcho	torneotest	gardellaandrea
+squadratorneo4	torneotest1	gardellaandrea
+Team1	torneotest1	gardellaandrea
+Non sono bello ma patcho	torneotest1	gardellaandrea
 \.
 
 
@@ -2862,12 +2931,12 @@ simoniadamo	5827	adamo	simoni	1994-09-06	Bogliasco	\N	1061	premium	medicina	0	0	
 basileadamo	9410	adamo	basile	1995-11-13	Milano	\N	1062	base	matematica	0	0	0	\N	0	non definito
 saperdiadamo	3193	adamo	saperdi	1994-07-21	SestriCapitale	\N	1063	premium	chimica	0	0	0	\N	0	non definito
 sangalettiadamo	8079	adamo	sangaletti	1991-02-22	SestriCapitale	\N	1064	base	medicina	0	0	0	\N	0	non definito
-polveriniandrea	6843	andrea	polverini	1991-03-21	Roma	\N	1019	premium	giurisprudenza	0	0	0	\N	9	non definito
-stefaniniandrea	1730	andrea	stefanini	1990-11-18	SestriCapitale	\N	1021	premium	fisica	0	0	0	\N	9	non definito
-tavellaandrea	2670	andrea	tavella	1995-09-03	Milano	\N	1022	base	medicina	0	0	0	\N	9	non definito
-zolezziandrea	7903	andrea	zolezzi	1993-02-04	SestriCapitale	\N	1016	base	matematica	0	0	0	\N	9	non definito
-oliveriandrea	8029	andrea	oliveri	1992-04-19	Bogliasco	\N	1017	premium	matematica	0	0	0	\N	9	non definito
-malattoandrea	8785	andrea	malatto	1991-08-15	Bogliasco	\N	1018	base	medicina	0	0	0	\N	9	non definito
+polveriniandrea	6843	andrea	polverini	1991-03-21	Roma	\N	1019	premium	giurisprudenza	0	0	0	\N	11	non definito
+stefaniniandrea	1730	andrea	stefanini	1990-11-18	SestriCapitale	\N	1021	premium	fisica	0	0	0	\N	11	non definito
+tavellaandrea	2670	andrea	tavella	1995-09-03	Milano	\N	1022	base	medicina	0	0	0	\N	11	non definito
+zolezziandrea	7903	andrea	zolezzi	1993-02-04	SestriCapitale	\N	1016	base	matematica	0	0	0	\N	11	non definito
+oliveriandrea	8029	andrea	oliveri	1992-04-19	Bogliasco	\N	1017	premium	matematica	0	0	0	\N	11	non definito
+malattoandrea	8785	andrea	malatto	1991-08-15	Bogliasco	\N	1018	base	medicina	0	0	0	\N	11	non definito
 paganiadamo	518	adamo	pagani	1992-09-05	Roma	\N	1065	premium	giurisprudenza	0	0	0	\N	0	non definito
 ferrariadamo	8791	adamo	ferrari	1995-01-05	Bogliasco	\N	1066	base	lettere	0	0	0	\N	0	non definito
 pannellaadamo	3851	adamo	pannella	1994-06-09	SestriCapitale	\N	1067	premium	fisica	0	0	0	\N	0	non definito
@@ -2930,7 +2999,7 @@ malattoaurora	9725	aurora	malatto	1990-03-11	Milano	\N	1126	base	fisica	0	0	0	\N
 polveriniaurora	3488	aurora	polverini	1994-08-22	Roma	\N	1127	premium	biologia	0	0	0	\N	0	non definito
 pianforiniaurora	6647	aurora	pianforini	1995-01-10	Roma	\N	1128	base	fisica	0	0	0	\N	0	non definito
 stefaniniaurora	5893	aurora	stefanini	1990-06-15	Bogliasco	\N	1129	premium	matematica	0	0	0	\N	0	non definito
-armaninoaurora	5038	aurora	armanino	1990-05-14	Roma	\N	1111	premium	biologia	0	0	0	\N	11	non definito
+armaninoaurora	5038	aurora	armanino	1990-05-14	Roma	\N	1111	premium	biologia	0	0	0	\N	15	non definito
 mattarellaaurora	2150	aurora	mattarella	1995-03-09	Milano	\N	1132	base	matematica	0	0	0	\N	0	non definito
 gentiloniaurora	2583	aurora	gentiloni	1995-06-09	Bogliasco	\N	1133	premium	biologia	0	0	0	\N	0	non definito
 napolitanoaurora	3860	aurora	napolitano	1993-04-10	Bogliasco	\N	1134	base	fisica	0	0	0	\N	0	non definito
@@ -2990,7 +3059,7 @@ armaninogelsomina	4233	gelsomina	armanino	1995-10-12	Bogliasco	\N	1192	base	chim
 campisigelsomina	2395	gelsomina	campisi	1993-01-25	Roma	\N	1193	premium	matematica	0	0	0	\N	0	non definito
 scipionigelsomina	9294	gelsomina	scipioni	1995-09-03	Bogliasco	\N	1194	base	chimica	0	0	0	\N	0	non definito
 scottigelsomina	8810	gelsomina	scotti	1994-05-20	Roma	\N	1195	premium	matematica	0	0	0	\N	0	non definito
-conteaurora	795	aurora	conte	1995-04-10	Roma	\N	1131	premium	fisica	0	0	0	\N	11	non definito
+conteaurora	795	aurora	conte	1995-04-10	Roma	\N	1131	premium	fisica	0	0	0	\N	15	non definito
 simonigelsomina	3846	gelsomina	simoni	1991-04-11	Roma	\N	1196	base	fisica	0	0	0	\N	0	non definito
 basilegelsomina	3162	gelsomina	basile	1995-06-06	Bogliasco	\N	1197	premium	fisica	0	0	0	\N	0	non definito
 saperdigelsomina	5158	gelsomina	saperdi	1995-06-07	Roma	\N	1198	base	biologia	0	0	0	\N	0	non definito
@@ -3295,7 +3364,7 @@ paganirita	2434	rita	pagani	1993-05-20	SestriCapitale	\N	1497	premium	lettere	0	
 ferraririta	1686	rita	ferrari	1992-08-09	SestriCapitale	\N	1498	base	matematica	0	0	0	\N	0	non definito
 pannellarita	1975	rita	pannella	1994-01-19	Bogliasco	\N	1499	premium	biologia	0	0	0	\N	0	non definito
 tascarita	2528	rita	tasca	1990-09-22	Milano	\N	1500	base	fisica	0	0	0	\N	0	non definito
-straforiniandrea	3186	andrea	straforini	1994-10-14	Roma	\N	1000	base	biologia	0	0	0	\N	17	non definito
+straforiniandrea	3186	andrea	straforini	1994-10-14	Roma	\N	1000	base	biologia	0	0	0	\N	21	non definito
 conteandrea	5174	andrea	conte	1996-05-08	Bogliasco	\N	1023	premium	giurisprudenza	0	0	0	\N	6	non definito
 armaninoandrea	826	andrea	armanino	1990-02-10	SestriCapitale	\N	1003	premium	giurisprudenza	0	0	0	\N	6	non definito
 campisiandrea	2996	andrea	campisi	1990-01-17	Roma	\N	1004	base	medicina	0	0	0	\N	6	non definito
@@ -3308,18 +3377,18 @@ paganiandrea	6763	andrea	pagani	1992-08-13	Bogliasco	\N	1011	premium	chimica	0	0
 ferrariandrea	526	andrea	ferrari	1995-08-22	Milano	\N	1012	base	chimica	0	0	0	\N	6	non definito
 pannellaandrea	9955	andrea	pannella	1996-12-16	Roma	\N	1013	premium	giurisprudenza	0	0	0	\N	6	non definito
 tascaandrea	5277	andrea	tasca	1995-08-20	SestriCapitale	\N	1014	base	matematica	0	0	0	\N	6	non definito
-scipioniandrea	4373	andrea	scipioni	1996-01-18	Roma	\N	1005	premium	giurisprudenza	0	0	0	\N	15	non definito
-tascaaurora	5246	aurora	tasca	1994-05-14	SestriCapitale	\N	1122	base	fisica	0	0	0	\N	19	non definito
+scipioniandrea	4373	andrea	scipioni	1996-01-18	Roma	\N	1005	premium	giurisprudenza	0	0	0	\N	17	non definito
 storaceandrea	5472	andrea	storace	1991-07-20	Roma	\N	1002	base	chimica	0	0	0	\N	6	non definito
-tavellaaurora	3057	aurora	tavella	1995-06-17	Milano	\N	1130	base	lettere	0	0	0	\N	12	non definito
-zazzeraandrea	8429	andrea	zazzera	1992-10-07	Bogliasco	\N	1001	premium	fisica	0	0	0	\N	17	non definito
-storacegaetano	7924	gaetano	storace	1996-06-03	SestriCapitale	\N	1137	premium	medicina	0	0	0	\N	11	non definito
-contegemma	6780	gemma	conte	1993-04-18	Milano	\N	1185	premium	chimica	0	0	0	\N	11	non definito
-malattomonica	1875	monica	malatto	1990-08-25	Milano	\N	1261	premium	lettere	0	0	0	\N	11	non definito
-armaninogaetano	1143	gaetano	armanino	1992-03-10	Bogliasco	\N	1138	base	lettere	0	0	0	\N	11	non definito
-campisigaetano	2060	gaetano	campisi	1995-01-06	Bogliasco	\N	1139	premium	fisica	0	0	0	\N	11	non definito
-contealberto	650	alberto	conte	1996-01-18	Bogliasco	\N	1104	base	biologia	0	0	0	\N	10	non definito
-saperdigaetano	7657	gaetano	saperdi	1991-11-20	Roma	\N	1144	base	fisica	0	0	0	\N	10	non definito
+tascaaurora	5246	aurora	tasca	1994-05-14	SestriCapitale	\N	1122	base	fisica	0	0	0	\N	23	non definito
+tavellaaurora	3057	aurora	tavella	1995-06-17	Milano	\N	1130	base	lettere	0	0	0	\N	16	non definito
+zazzeraandrea	8429	andrea	zazzera	1992-10-07	Bogliasco	\N	1001	premium	fisica	0	0	0	\N	21	non definito
+storacegaetano	7924	gaetano	storace	1996-06-03	SestriCapitale	\N	1137	premium	medicina	0	0	0	\N	15	non definito
+contegemma	6780	gemma	conte	1993-04-18	Milano	\N	1185	premium	chimica	0	0	0	\N	15	non definito
+malattomonica	1875	monica	malatto	1990-08-25	Milano	\N	1261	premium	lettere	0	0	0	\N	15	non definito
+armaninogaetano	1143	gaetano	armanino	1992-03-10	Bogliasco	\N	1138	base	lettere	0	0	0	\N	15	non definito
+campisigaetano	2060	gaetano	campisi	1995-01-06	Bogliasco	\N	1139	premium	fisica	0	0	0	\N	15	non definito
+contealberto	650	alberto	conte	1996-01-18	Bogliasco	\N	1104	base	biologia	0	0	0	\N	12	non definito
+saperdigaetano	7657	gaetano	saperdi	1991-11-20	Roma	\N	1144	base	fisica	0	0	0	\N	12	non definito
 \.
 
 
@@ -3448,6 +3517,40 @@ ALTER TABLE ONLY bdproject.users
 
 ALTER TABLE ONLY bdproject.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (username);
+
+
+--
+-- Name: tournamentprogram _RETURN; Type: RULE; Schema: bdproject; Owner: andreo
+--
+
+CREATE RULE "_RETURN" AS
+    ON SELECT TO bdproject.tournamentprogram DO INSTEAD  SELECT m.tournament,
+    m.building,
+    m.organizedon,
+    m.id,
+    bdproject.aux_competitors(m.id) AS competitors,
+    bdproject.aux_referee(m.id) AS referee,
+    m.phase,
+    bar.winner
+   FROM ((bdproject.matches m
+     LEFT JOIN bdproject.outcomes o ON ((m.id = o.match)))
+     JOIN ( SELECT foo.match,
+            foo.wins,
+            o_1.team AS winner
+           FROM (( SELECT outcomes.match,
+                    max(
+                        CASE
+                            WHEN (outcomes.score IS NULL) THEN outcomes.win
+                            ELSE outcomes.score
+                        END) AS wins
+                   FROM bdproject.outcomes
+                  GROUP BY outcomes.match) foo
+             LEFT JOIN bdproject.outcomes o_1 ON (((o_1.match = foo.match) AND (
+                CASE
+                    WHEN (o_1.score IS NULL) THEN o_1.win
+                    ELSE o_1.score
+                END = foo.wins))))) bar ON ((bar.match = o.match)))
+  GROUP BY m.id, bar.winner;
 
 
 --
