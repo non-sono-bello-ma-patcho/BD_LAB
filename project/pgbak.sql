@@ -223,6 +223,25 @@ $_$;
 ALTER FUNCTION bdproject.aux_ispremium(character varying) OWNER TO andreo;
 
 --
+-- Name: aux_outcomesinmatch(bigint); Type: FUNCTION; Schema: bdproject; Owner: andreo
+--
+
+CREATE FUNCTION bdproject.aux_outcomesinmatch(_id bigint) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  return (
+      select count(*)
+      from outcomes o
+      where o.match = _id
+    ) <=2;
+END;
+$$;
+
+
+ALTER FUNCTION bdproject.aux_outcomesinmatch(_id bigint) OWNER TO andreo;
+
+--
 -- Name: aux_referee(bigint); Type: FUNCTION; Schema: bdproject; Owner: andreo
 --
 
@@ -408,7 +427,7 @@ begin
 if(ttype='italiana')then
 
   else if(ttype='eliminazione diretta')then
-        numberofmatches:=power(2,_phase);
+        numberofmatches:=power(2,_phase)*2;--perchè gli outcomes sono 2 per partita
         select count(distinct team) from outcomes join matches on outcomes.match = matches.id where matches.tournament=_tournament and matches.phase=_phase into n;
         return (n=numberofmatches);
       else--eliminazione mista
@@ -990,7 +1009,7 @@ declare
 			from matchcandidatures inner join teamcandidatures on matchcandidatures.team=teamcandidatures.team
 			where matchcandidatures.match=new.match and matchcandidatures.confirmed is not null  and teamcandidatures.admin is not null ;
 	categoria varchar(64);
-  tournament varchar(64)=(select distinct tournament from outcomes join matches  on outcomes.match = matches.id where matches.id=new.match);
+  _tournament varchar(64)=(select distinct tournament from outcomes join matches  on outcomes.match = matches.id where matches.id=new.match);
   teamset refcursor;
   phase int =(select distinct phase from outcomes join matches  on outcomes.match = matches.id where matches.id=new.match);
   _team varchar(64);
@@ -1019,21 +1038,22 @@ begin
 	end loop;
 
 	--se partita fa parte di un torneo controlla se la fase è già terminata e assegna i vincitori alle partite successive
-	if(tournament is not null) then
-		if(fase_terminata(tournament,phase))then
-			teamset:=calcola_squadre_vincitrici(tournament,phase );
+	if(_tournament is not null) then
+		if(fase_terminata(_tournament,phase))then
+			teamset:=calcola_squadre_vincitrici(_tournament,phase );
 			--open teamset;
 			fetch teamset into _team;
 		  if(phase>0)then
 		    while (FOUND) loop
-					execute aux_assignmatch(_team,tournament,phase-1);
+		      raise  notice 'assign %',_team;
+					execute aux_assignmatch(_team,_tournament,phase-1);
 					fetch teamset into _team;
 				end loop;
-				execute aux_acceptmatches(tournament, phase-1);
+				execute aux_acceptmatches(_tournament, phase-1);
 		  else--setta vincitore
 				update tournaments
-		    set tournaments.winner=_team
-		    where tournaments.name=tournament;
+		    set winner=_team
+		    where name=_tournament;
 		  end if;
 
 		end if ;
@@ -2008,7 +2028,8 @@ CREATE TABLE bdproject.outcomes (
     admin character varying(64) NOT NULL,
     insertedon date DEFAULT ('now'::text)::date NOT NULL,
     duration time without time zone DEFAULT '00:00:00'::time without time zone,
-    team character varying(64) NOT NULL
+    team character varying(64) NOT NULL,
+    CONSTRAINT outcome_allowed CHECK (bdproject.aux_outcomesinmatch(match))
 );
 
 
@@ -2468,9 +2489,10 @@ SELECT pg_catalog.setval('bdproject.fora_photo_seq', 1, false);
 --
 
 COPY bdproject.matchcandidatures (team, match, confirmed) FROM stdin;
-squadratorneo3	409175	gardellaandrea
 33_1	33	straforiniandrea
 33_2	33	straforiniandrea
+squadratorneo3	409175	gardellaandrea
+Non sono bello ma patcho	409175	gardellaandrea
 squadratorneo3	409173	gardellaandrea
 squadratorneo4	409173	gardellaandrea
 Team1	409174	gardellaandrea
@@ -2490,9 +2512,9 @@ SELECT pg_catalog.setval('bdproject.matchcandidatures_match_seq', 1, false);
 --
 
 COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category, phase) FROM stdin;
-409175	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	open	gardellaandrea	basket	0
 409173	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	closed	gardellaandrea	basket	1
 409174	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	closed	gardellaandrea	basket	1
+409175	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	closed	gardellaandrea	basket	0
 33	A. S. D. Castelletto	2018-11-30	2018-11-30	\N	closed	straforiniandrea	basket	\N
 \.
 
@@ -2509,10 +2531,14 @@ SELECT pg_catalog.setval('bdproject.matches_id_seq', 409175, true);
 --
 
 COPY bdproject.outcomes (match, score, goleador, win, admin, insertedon, duration, team) FROM stdin;
-33	0	storaceandrea	0	straforiniandrea	2018-12-07	01:00:00	33_1
-33	3	storaceandrea	0	straforiniandrea	2018-12-07	01:00:00	33_2
 409173	2	tascaaurora tavellaaurora	0	gardellaandrea	2018-12-24	00:20:00	squadratorneo3
 409173	1	saperdigaetano	0	gardellaandrea	2018-12-24	00:20:00	squadratorneo4
+409174	2	straforiniandrea storacegaetano	0	gardellaandrea	2018-12-24	00:20:00	Non sono bello ma patcho
+409174	1	tavellaandrea	0	gardellaandrea	2018-12-24	00:20:00	Team1
+409175	2	straforiniandrea storacegaetano	0	gardellaandrea	2018-12-24	00:20:00	Non sono bello ma patcho
+409175	1	tascaaurora	0	gardellaandrea	2018-12-24	00:20:00	squadratorneo3
+33	0	storaceandrea	0	straforiniandrea	2018-12-07	01:00:00	33_1
+33	3	storaceandrea	0	straforiniandrea	2018-12-07	01:00:00	33_2
 \.
 
 
@@ -2669,7 +2695,6 @@ Non sono bello ma patcho	storacegaetano	straforiniandrea	ah boh
 Non sono bello ma patcho	contegemma	straforiniandrea	ah boh
 Non sono bello ma patcho	malattomonica	straforiniandrea	ah boh
 Non sono bello ma patcho	armaninoaurora	straforiniandrea	undefined
-Non sono bello ma patcho	tascaaurora	straforiniandrea	undefined
 squadratorneo4	saperdigaetano	contealberto	undefined
 Team1	zolezziandrea	malattoandrea	undefined
 Team1	oliveriandrea	malattoandrea	undefined
@@ -2734,7 +2759,7 @@ squadratorneo4	\N	basket	torneoprova	ciaozio4	contealberto	open
 --
 
 COPY bdproject.tournaments (name, ttype, manager, teamsnumber, state, category, winner, building) FROM stdin;
-torneotest	eliminazione diretta	gardellaandrea	4	closed	basket	\N	A.s. Gymnotecnica 
+torneotest	eliminazione diretta	gardellaandrea	4	closed	basket	Non sono bello ma patcho	A.s. Gymnotecnica 
 \.
 
 
@@ -2756,13 +2781,7 @@ Non sono bello ma patcho	torneotest	gardellaandrea
 
 COPY bdproject.users (username, password, name, surname, birthdate, birthplace, photo, regnumber, uprivilege, studycourse, tennismatch, volleymatch, soccermatch, phonenumber, basketmatch, gender) FROM stdin;
 gardellaandrea	8863	andrea	gardella	1990-07-06	Roma	\N	1015	premium	chimica	0	0	0	\N	0	non definito
-zolezziandrea	7903	andrea	zolezzi	1993-02-04	SestriCapitale	\N	1016	base	matematica	0	0	0	\N	0	non definito
-oliveriandrea	8029	andrea	oliveri	1992-04-19	Bogliasco	\N	1017	premium	matematica	0	0	0	\N	0	non definito
-malattoandrea	8785	andrea	malatto	1991-08-15	Bogliasco	\N	1018	base	medicina	0	0	0	\N	0	non definito
-polveriniandrea	6843	andrea	polverini	1991-03-21	Roma	\N	1019	premium	giurisprudenza	0	0	0	\N	0	non definito
 pianforiniandrea	9527	andrea	pianforini	1990-11-09	Roma	\N	1020	base	lettere	0	0	0	\N	0	non definito
-stefaniniandrea	1730	andrea	stefanini	1990-11-18	SestriCapitale	\N	1021	premium	fisica	0	0	0	\N	0	non definito
-tavellaandrea	2670	andrea	tavella	1995-09-03	Milano	\N	1022	base	medicina	0	0	0	\N	0	non definito
 mattarellaandrea	2539	andrea	mattarella	1994-02-17	Roma	\N	1024	base	lettere	0	0	0	\N	0	non definito
 gentiloniandrea	1636	andrea	gentiloni	1990-09-18	SestriCapitale	\N	1025	premium	matematica	0	0	0	\N	0	non definito
 napolitanoandrea	9521	andrea	napolitano	1992-02-10	SestriCapitale	\N	1026	base	biologia	0	0	0	\N	0	non definito
@@ -2804,6 +2823,12 @@ simoniadamo	5827	adamo	simoni	1994-09-06	Bogliasco	\N	1061	premium	medicina	0	0	
 basileadamo	9410	adamo	basile	1995-11-13	Milano	\N	1062	base	matematica	0	0	0	\N	0	non definito
 saperdiadamo	3193	adamo	saperdi	1994-07-21	SestriCapitale	\N	1063	premium	chimica	0	0	0	\N	0	non definito
 sangalettiadamo	8079	adamo	sangaletti	1991-02-22	SestriCapitale	\N	1064	base	medicina	0	0	0	\N	0	non definito
+polveriniandrea	6843	andrea	polverini	1991-03-21	Roma	\N	1019	premium	giurisprudenza	0	0	0	\N	9	non definito
+stefaniniandrea	1730	andrea	stefanini	1990-11-18	SestriCapitale	\N	1021	premium	fisica	0	0	0	\N	9	non definito
+tavellaandrea	2670	andrea	tavella	1995-09-03	Milano	\N	1022	base	medicina	0	0	0	\N	9	non definito
+zolezziandrea	7903	andrea	zolezzi	1993-02-04	SestriCapitale	\N	1016	base	matematica	0	0	0	\N	9	non definito
+oliveriandrea	8029	andrea	oliveri	1992-04-19	Bogliasco	\N	1017	premium	matematica	0	0	0	\N	9	non definito
+malattoandrea	8785	andrea	malatto	1991-08-15	Bogliasco	\N	1018	base	medicina	0	0	0	\N	9	non definito
 paganiadamo	518	adamo	pagani	1992-09-05	Roma	\N	1065	premium	giurisprudenza	0	0	0	\N	0	non definito
 ferrariadamo	8791	adamo	ferrari	1995-01-05	Bogliasco	\N	1066	base	lettere	0	0	0	\N	0	non definito
 pannellaadamo	3851	adamo	pannella	1994-06-09	SestriCapitale	\N	1067	premium	fisica	0	0	0	\N	0	non definito
@@ -2849,7 +2874,6 @@ napolitanoalberto	2719	alberto	napolitano	1994-07-23	SestriCapitale	\N	1107	prem
 straforiniaurora	8031	aurora	straforini	1993-04-05	Bogliasco	\N	1108	base	lettere	0	0	0	\N	0	non definito
 zazzeraaurora	5276	aurora	zazzera	1991-05-19	Roma	\N	1109	premium	giurisprudenza	0	0	0	\N	0	non definito
 storaceaurora	5956	aurora	storace	1992-03-07	SestriCapitale	\N	1110	base	chimica	0	0	0	\N	0	non definito
-armaninoaurora	5038	aurora	armanino	1990-05-14	Roma	\N	1111	premium	biologia	0	0	0	\N	0	non definito
 campisiaurora	783	aurora	campisi	1990-03-05	Milano	\N	1112	base	medicina	0	0	0	\N	0	non definito
 scipioniaurora	6175	aurora	scipioni	1996-04-11	Roma	\N	1113	premium	lettere	0	0	0	\N	0	non definito
 scottiaurora	2010	aurora	scotti	1995-02-07	SestriCapitale	\N	1114	base	giurisprudenza	0	0	0	\N	0	non definito
@@ -2867,15 +2891,12 @@ malattoaurora	9725	aurora	malatto	1990-03-11	Milano	\N	1126	base	fisica	0	0	0	\N
 polveriniaurora	3488	aurora	polverini	1994-08-22	Roma	\N	1127	premium	biologia	0	0	0	\N	0	non definito
 pianforiniaurora	6647	aurora	pianforini	1995-01-10	Roma	\N	1128	base	fisica	0	0	0	\N	0	non definito
 stefaniniaurora	5893	aurora	stefanini	1990-06-15	Bogliasco	\N	1129	premium	matematica	0	0	0	\N	0	non definito
-conteaurora	795	aurora	conte	1995-04-10	Roma	\N	1131	premium	fisica	0	0	0	\N	0	non definito
+armaninoaurora	5038	aurora	armanino	1990-05-14	Roma	\N	1111	premium	biologia	0	0	0	\N	11	non definito
 mattarellaaurora	2150	aurora	mattarella	1995-03-09	Milano	\N	1132	base	matematica	0	0	0	\N	0	non definito
 gentiloniaurora	2583	aurora	gentiloni	1995-06-09	Bogliasco	\N	1133	premium	biologia	0	0	0	\N	0	non definito
 napolitanoaurora	3860	aurora	napolitano	1993-04-10	Bogliasco	\N	1134	base	fisica	0	0	0	\N	0	non definito
 straforinigaetano	6055	gaetano	straforini	1992-02-05	Roma	\N	1135	premium	matematica	0	0	0	\N	0	non definito
 zazzeragaetano	3073	gaetano	zazzera	1995-12-12	Bogliasco	\N	1136	base	matematica	0	0	0	\N	0	non definito
-storacegaetano	7924	gaetano	storace	1996-06-03	SestriCapitale	\N	1137	premium	medicina	0	0	0	\N	0	non definito
-armaninogaetano	1143	gaetano	armanino	1992-03-10	Bogliasco	\N	1138	base	lettere	0	0	0	\N	0	non definito
-campisigaetano	2060	gaetano	campisi	1995-01-06	Bogliasco	\N	1139	premium	fisica	0	0	0	\N	0	non definito
 scipionigaetano	3330	gaetano	scipioni	1994-12-20	Roma	\N	1140	base	medicina	0	0	0	\N	0	non definito
 scottigaetano	7603	gaetano	scotti	1995-01-02	Milano	\N	1141	premium	fisica	0	0	0	\N	0	non definito
 simonigaetano	3946	gaetano	simoni	1991-09-06	SestriCapitale	\N	1142	base	biologia	0	0	0	\N	0	non definito
@@ -2920,7 +2941,6 @@ polverinigemma	5524	gemma	polverini	1994-06-10	SestriCapitale	\N	1181	premium	gi
 pianforinigemma	7402	gemma	pianforini	1995-11-09	Roma	\N	1182	base	biologia	0	0	0	\N	0	non definito
 stefaninigemma	1647	gemma	stefanini	1994-07-15	Roma	\N	1183	premium	biologia	0	0	0	\N	0	non definito
 tavellagemma	5242	gemma	tavella	1991-12-11	SestriCapitale	\N	1184	base	matematica	0	0	0	\N	0	non definito
-contegemma	6780	gemma	conte	1993-04-18	Milano	\N	1185	premium	chimica	0	0	0	\N	0	non definito
 mattarellagemma	4772	gemma	mattarella	1992-06-06	SestriCapitale	\N	1186	base	chimica	0	0	0	\N	0	non definito
 gentilonigemma	5507	gemma	gentiloni	1995-06-19	Milano	\N	1187	premium	fisica	0	0	0	\N	0	non definito
 napolitanogemma	2241	gemma	napolitano	1993-05-02	SestriCapitale	\N	1188	base	giurisprudenza	0	0	0	\N	0	non definito
@@ -2931,6 +2951,7 @@ armaninogelsomina	4233	gelsomina	armanino	1995-10-12	Bogliasco	\N	1192	base	chim
 campisigelsomina	2395	gelsomina	campisi	1993-01-25	Roma	\N	1193	premium	matematica	0	0	0	\N	0	non definito
 scipionigelsomina	9294	gelsomina	scipioni	1995-09-03	Bogliasco	\N	1194	base	chimica	0	0	0	\N	0	non definito
 scottigelsomina	8810	gelsomina	scotti	1994-05-20	Roma	\N	1195	premium	matematica	0	0	0	\N	0	non definito
+conteaurora	795	aurora	conte	1995-04-10	Roma	\N	1131	premium	fisica	0	0	0	\N	11	non definito
 simonigelsomina	3846	gelsomina	simoni	1991-04-11	Roma	\N	1196	base	fisica	0	0	0	\N	0	non definito
 basilegelsomina	3162	gelsomina	basile	1995-06-06	Bogliasco	\N	1197	premium	fisica	0	0	0	\N	0	non definito
 saperdigelsomina	5158	gelsomina	saperdi	1995-06-07	Roma	\N	1198	base	biologia	0	0	0	\N	0	non definito
@@ -2996,7 +3017,6 @@ tascamonica	807	monica	tasca	1995-07-05	Bogliasco	\N	1257	premium	medicina	0	0	0
 gardellamonica	797	monica	gardella	1991-10-08	Milano	\N	1258	base	matematica	0	0	0	\N	0	non definito
 zolezzimonica	9575	monica	zolezzi	1991-08-14	Roma	\N	1259	premium	medicina	0	0	0	\N	0	non definito
 oliverimonica	1681	monica	oliveri	1991-11-11	Bogliasco	\N	1260	base	fisica	0	0	0	\N	0	non definito
-malattomonica	1875	monica	malatto	1990-08-25	Milano	\N	1261	premium	lettere	0	0	0	\N	0	non definito
 polverinimonica	3898	monica	polverini	1990-11-22	Roma	\N	1262	base	giurisprudenza	0	0	0	\N	0	non definito
 pianforinimonica	6548	monica	pianforini	1991-11-24	SestriCapitale	\N	1263	premium	giurisprudenza	0	0	0	\N	0	non definito
 stefaninimonica	9575	monica	stefanini	1996-02-09	Roma	\N	1264	base	medicina	0	0	0	\N	0	non definito
@@ -3236,11 +3256,10 @@ paganirita	2434	rita	pagani	1993-05-20	SestriCapitale	\N	1497	premium	lettere	0	
 ferraririta	1686	rita	ferrari	1992-08-09	SestriCapitale	\N	1498	base	matematica	0	0	0	\N	0	non definito
 pannellarita	1975	rita	pannella	1994-01-19	Bogliasco	\N	1499	premium	biologia	0	0	0	\N	0	non definito
 tascarita	2528	rita	tasca	1990-09-22	Milano	\N	1500	base	fisica	0	0	0	\N	0	non definito
-straforiniandrea	3186	andrea	straforini	1994-10-14	Roma	\N	1000	base	biologia	0	0	0	\N	6	non definito
+straforiniandrea	3186	andrea	straforini	1994-10-14	Roma	\N	1000	base	biologia	0	0	0	\N	17	non definito
 conteandrea	5174	andrea	conte	1996-05-08	Bogliasco	\N	1023	premium	giurisprudenza	0	0	0	\N	6	non definito
 armaninoandrea	826	andrea	armanino	1990-02-10	SestriCapitale	\N	1003	premium	giurisprudenza	0	0	0	\N	6	non definito
 campisiandrea	2996	andrea	campisi	1990-01-17	Roma	\N	1004	base	medicina	0	0	0	\N	6	non definito
-scipioniandrea	4373	andrea	scipioni	1996-01-18	Roma	\N	1005	premium	giurisprudenza	0	0	0	\N	6	non definito
 scottiandrea	55	andrea	scotti	1994-10-25	Bogliasco	\N	1006	base	matematica	0	0	0	\N	6	non definito
 simoniandrea	1877	andrea	simoni	1991-04-21	Bogliasco	\N	1007	premium	chimica	0	0	0	\N	6	non definito
 basileandrea	2549	andrea	basile	1996-04-10	Milano	\N	1008	base	lettere	0	0	0	\N	6	non definito
@@ -3250,12 +3269,18 @@ paganiandrea	6763	andrea	pagani	1992-08-13	Bogliasco	\N	1011	premium	chimica	0	0
 ferrariandrea	526	andrea	ferrari	1995-08-22	Milano	\N	1012	base	chimica	0	0	0	\N	6	non definito
 pannellaandrea	9955	andrea	pannella	1996-12-16	Roma	\N	1013	premium	giurisprudenza	0	0	0	\N	6	non definito
 tascaandrea	5277	andrea	tasca	1995-08-20	SestriCapitale	\N	1014	base	matematica	0	0	0	\N	6	non definito
-saperdigaetano	7657	gaetano	saperdi	1991-11-20	Roma	\N	1144	base	fisica	0	0	0	\N	2	non definito
-zazzeraandrea	8429	andrea	zazzera	1992-10-07	Bogliasco	\N	1001	premium	fisica	0	0	0	\N	6	non definito
+scipioniandrea	4373	andrea	scipioni	1996-01-18	Roma	\N	1005	premium	giurisprudenza	0	0	0	\N	15	non definito
+tascaaurora	5246	aurora	tasca	1994-05-14	SestriCapitale	\N	1122	base	fisica	0	0	0	\N	19	non definito
 storaceandrea	5472	andrea	storace	1991-07-20	Roma	\N	1002	base	chimica	0	0	0	\N	6	non definito
-tascaaurora	5246	aurora	tasca	1994-05-14	SestriCapitale	\N	1122	base	fisica	0	0	0	\N	2	non definito
-tavellaaurora	3057	aurora	tavella	1995-06-17	Milano	\N	1130	base	lettere	0	0	0	\N	2	non definito
-contealberto	650	alberto	conte	1996-01-18	Bogliasco	\N	1104	base	biologia	0	0	0	\N	2	non definito
+tavellaaurora	3057	aurora	tavella	1995-06-17	Milano	\N	1130	base	lettere	0	0	0	\N	12	non definito
+zazzeraandrea	8429	andrea	zazzera	1992-10-07	Bogliasco	\N	1001	premium	fisica	0	0	0	\N	17	non definito
+storacegaetano	7924	gaetano	storace	1996-06-03	SestriCapitale	\N	1137	premium	medicina	0	0	0	\N	11	non definito
+contegemma	6780	gemma	conte	1993-04-18	Milano	\N	1185	premium	chimica	0	0	0	\N	11	non definito
+malattomonica	1875	monica	malatto	1990-08-25	Milano	\N	1261	premium	lettere	0	0	0	\N	11	non definito
+armaninogaetano	1143	gaetano	armanino	1992-03-10	Bogliasco	\N	1138	base	lettere	0	0	0	\N	11	non definito
+campisigaetano	2060	gaetano	campisi	1995-01-06	Bogliasco	\N	1139	premium	fisica	0	0	0	\N	11	non definito
+contealberto	650	alberto	conte	1996-01-18	Bogliasco	\N	1104	base	biologia	0	0	0	\N	10	non definito
+saperdigaetano	7657	gaetano	saperdi	1991-11-20	Roma	\N	1144	base	fisica	0	0	0	\N	10	non definito
 \.
 
 
