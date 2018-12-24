@@ -136,56 +136,26 @@ CREATE TYPE bdproject.state AS ENUM (
 ALTER TYPE bdproject.state OWNER TO postgres;
 
 --
--- Name: acceptmatches(character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: andreo
+-- Name: aux_acceptmatches(character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.acceptmatches(tour character varying, phase integer) RETURNS void
+CREATE FUNCTION bdproject.aux_acceptmatches(_tour character varying, _phase integer) RETURNS void
     LANGUAGE plpgsql
     AS $$
 declare
-  manager  varchar(64);
+  _manager  varchar(64)=(select  manager from tournaments where name = _tour );
 BEGIN
-  select manager from tournaments where name = tour limit 1 into manager;
   update matchcandidatures mc
-   set confirmed = manager
-   where id in ( select id
+   set confirmed = _manager
+   where mc.match in ( select id
                   from matches m
-                  where tournament = tour and m.phase = phase
+                  where m.tournament = _tour and m.phase = _phase
                   );
 END;
 $$;
 
 
-ALTER FUNCTION bdproject.acceptmatches(tour character varying, phase integer) OWNER TO andreo;
-
---
--- Name: assignmatch(character varying, character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: andreo
---
-
-CREATE FUNCTION bdproject.assignmatch(team character varying, tour character varying, phase integer) RETURNS void
-    LANGUAGE plpgsql
-    AS $$
-declare
-  manager  varchar(64);
-  matchno bigint;
-
-BEGIN
-  -- per ogni elemento del cursore inserisce ciascuna delle squadre
-  select manager from tournaments where name = tour limit 1 into manager;
-  select id
-    from matches
-        where tournament = tour and matches.phase=phase
-        not in (  select id
-                  from matches
-                  right outer join matchcandidatures m on matches.id = m."match"
-                  where tournament = tour and matches.phase=phase)
-                  limit 1 into matchno;
-      insert into matchcandidatures values (team, matchno, manager);
-END;
-$$;
-
-
-ALTER FUNCTION bdproject.assignmatch(team character varying, tour character varying, phase integer) OWNER TO andreo;
+ALTER FUNCTION bdproject.aux_acceptmatches(_tour character varying, _phase integer) OWNER TO strafo;
 
 --
 -- Name: aux_assignmatch(character varying, character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: strafo
@@ -195,18 +165,22 @@ CREATE FUNCTION bdproject.aux_assignmatch(_team character varying, _tour charact
     LANGUAGE plpgsql
     AS $$
 declare
-  _manager  varchar(64)=(select manager from tournaments where tournaments.name = _tour limit 1 );
   _matchno bigint;
 BEGIN
 
-  select matches.id from matches where matches.tournament = _tour and matches.phase=_phase
-        not in (  select id from matches
-                  right outer join matchcandidatures m on matches.id = m.match
-                  where tournament = _tour and matches.phase=_phase
+  select matches.id from matches where matches.tournament = _tour and matches.phase=_phase and matches.id
+        not in (  
+                      select m.id
+                      from matches m left outer join matchcandidatures mc on m.id = mc.match
+                      where tournament =_tour and m.phase=_phase and m.id is not null
+                      group by m.id
+                      having count(*)>=2
                )
   limit 1 into _matchno;
 
-  insert into matchcandidatures values (_team, _matchno, _manager);
+  if(_matchno is null)then return; end if ;
+  insert into matchcandidatures values (_team, _matchno, null);
+
 END;
 $$;
 
@@ -426,7 +400,7 @@ CREATE FUNCTION bdproject.fase_terminata(_tournament character varying, _phase i
     LANGUAGE plpgsql
     AS $$
 declare
-  ttype bdproject.sport=(select tournaments.ttype from tournaments where tournaments.name=_tournament);
+  ttype varchar(64)=(select tournaments.ttype from tournaments where tournaments.name=_tournament);
   numberofmatches int;
   n int;
 begin
@@ -451,10 +425,10 @@ $$;
 ALTER FUNCTION bdproject.fase_terminata(_tournament character varying, _phase integer) OWNER TO strafo;
 
 --
--- Name: incrementapartitegiocateutente(bdproject.sport, character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
+-- Name: incrementapartitegiocateutente(character varying, character varying); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.incrementapartitegiocateutente(_tipo bdproject.sport, _username character varying) RETURNS void
+CREATE FUNCTION bdproject.incrementapartitegiocateutente(_tipo character varying, _username character varying) RETURNS void
     LANGUAGE plpgsql
     AS $$
 begin
@@ -482,7 +456,7 @@ end;
 $$;
 
 
-ALTER FUNCTION bdproject.incrementapartitegiocateutente(_tipo bdproject.sport, _username character varying) OWNER TO strafo;
+ALTER FUNCTION bdproject.incrementapartitegiocateutente(_tipo character varying, _username character varying) OWNER TO strafo;
 
 --
 -- Name: int_analysis_best_mactive_course(); Type: FUNCTION; Schema: bdproject; Owner: strafo
@@ -1015,10 +989,10 @@ declare
 			select applicant
 			from matchcandidatures inner join teamcandidatures on matchcandidatures.team=teamcandidatures.team
 			where matchcandidatures.match=new.match and matchcandidatures.confirmed is not null  and teamcandidatures.admin is not null ;
-	categoria bdproject.sport;
-  tournament varchar(64)=(select distinct tournament from outcomes join matches m on outcomes.match = m.id where m.matches.id=new.match);
+	categoria varchar(64);
+  tournament varchar(64)=(select distinct tournament from outcomes join matches  on outcomes.match = matches.id where matches.id=new.match);
   teamset refcursor;
-  phase int =(select distinct phase from outcomes join matches m on outcomes.match = m.id where m.matches.id=new.match);
+  phase int =(select distinct phase from outcomes join matches  on outcomes.match = matches.id where matches.id=new.match);
   _team varchar(64);
 begin
 	--esiste la partita in questione? sì perchè match è chiave primaria sulla tabella match--
@@ -1051,11 +1025,11 @@ begin
 			--open teamset;
 			fetch teamset into _team;
 		  if(phase>0)then
-		    while teamset%FOUND loop
+		    while (FOUND) loop
 					execute aux_assignmatch(_team,tournament,phase-1);
 					fetch teamset into _team;
 				end loop;
-				execute acceptmatches(tournament, phase-1);
+				execute aux_acceptmatches(tournament, phase-1);
 		  else--setta vincitore
 				update tournaments
 		    set tournaments.winner=_team
@@ -1063,7 +1037,9 @@ begin
 		  end if;
 
 		end if ;
+		if(teamset is not  null) then 
 		close teamset;
+		end if;
 	end if;
 
 	return new;
@@ -1224,9 +1200,9 @@ begin
     loop
       execute aux_assignmatch(teamname.team, new.tournament,maxlevel);
       end loop;
-    execute acceptmatches(new.tournament, maxlevel);
+    execute aux_acceptmatches(new.tournament, maxlevel);
   end if;
-
+return new;
 end;
 $$;
 
@@ -2492,8 +2468,13 @@ SELECT pg_catalog.setval('bdproject.fora_photo_seq', 1, false);
 --
 
 COPY bdproject.matchcandidatures (team, match, confirmed) FROM stdin;
+squadratorneo3	409175	gardellaandrea
 33_1	33	straforiniandrea
 33_2	33	straforiniandrea
+squadratorneo3	409173	gardellaandrea
+squadratorneo4	409173	gardellaandrea
+Team1	409174	gardellaandrea
+Non sono bello ma patcho	409174	gardellaandrea
 \.
 
 
@@ -2509,9 +2490,9 @@ SELECT pg_catalog.setval('bdproject.matchcandidatures_match_seq', 1, false);
 --
 
 COPY bdproject.matches (id, building, organizedon, insertedon, tournament, mstate, admin, category, phase) FROM stdin;
-409173	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	open	gardellaandrea	basket	1
-409174	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	open	gardellaandrea	basket	1
 409175	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	open	gardellaandrea	basket	0
+409173	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	closed	gardellaandrea	basket	1
+409174	A.s. Gymnotecnica 	2018-12-23	2018-12-23	torneotest	closed	gardellaandrea	basket	1
 33	A. S. D. Castelletto	2018-11-30	2018-11-30	\N	closed	straforiniandrea	basket	\N
 \.
 
@@ -2530,6 +2511,8 @@ SELECT pg_catalog.setval('bdproject.matches_id_seq', 409175, true);
 COPY bdproject.outcomes (match, score, goleador, win, admin, insertedon, duration, team) FROM stdin;
 33	0	storaceandrea	0	straforiniandrea	2018-12-07	01:00:00	33_1
 33	3	storaceandrea	0	straforiniandrea	2018-12-07	01:00:00	33_2
+409173	2	tascaaurora tavellaaurora	0	gardellaandrea	2018-12-24	00:20:00	squadratorneo3
+409173	1	saperdigaetano	0	gardellaandrea	2018-12-24	00:20:00	squadratorneo4
 \.
 
 
@@ -2751,7 +2734,7 @@ squadratorneo4	\N	basket	torneoprova	ciaozio4	contealberto	open
 --
 
 COPY bdproject.tournaments (name, ttype, manager, teamsnumber, state, category, winner, building) FROM stdin;
-torneotest	eliminazione diretta	gardellaandrea	4	open	basket	\N	A.s. Gymnotecnica 
+torneotest	eliminazione diretta	gardellaandrea	4	closed	basket	\N	A.s. Gymnotecnica 
 \.
 
 
@@ -2760,10 +2743,10 @@ torneotest	eliminazione diretta	gardellaandrea	4	open	basket	\N	A.s. Gymnotecnic
 --
 
 COPY bdproject.tournamentscandidatures (team, tournament, confirmed) FROM stdin;
-squadratorneo3	torneotest	\N
-squadratorneo4	torneotest	\N
-Team1	torneotest	\N
-Non sono bello ma patcho	torneotest	\N
+squadratorneo3	torneotest	gardellaandrea
+squadratorneo4	torneotest	gardellaandrea
+Team1	torneotest	gardellaandrea
+Non sono bello ma patcho	torneotest	gardellaandrea
 \.
 
 
@@ -2860,7 +2843,6 @@ polverinialberto	7295	alberto	polverini	1996-01-02	Roma	\N	1100	base	fisica	0	0	
 pianforinialberto	2744	alberto	pianforini	1990-01-08	Roma	\N	1101	premium	medicina	0	0	0	\N	0	non definito
 stefaninialberto	5994	alberto	stefanini	1993-12-25	SestriCapitale	\N	1102	base	lettere	0	0	0	\N	0	non definito
 tavellaalberto	3155	alberto	tavella	1995-10-04	SestriCapitale	\N	1103	premium	fisica	0	0	0	\N	0	non definito
-contealberto	650	alberto	conte	1996-01-18	Bogliasco	\N	1104	base	biologia	0	0	0	\N	0	non definito
 mattarellaalberto	7641	alberto	mattarella	1995-11-08	SestriCapitale	\N	1105	premium	medicina	0	0	0	\N	0	non definito
 gentilonialberto	4257	alberto	gentiloni	1990-12-18	Milano	\N	1106	base	matematica	0	0	0	\N	0	non definito
 napolitanoalberto	2719	alberto	napolitano	1994-07-23	SestriCapitale	\N	1107	premium	matematica	0	0	0	\N	0	non definito
@@ -2878,7 +2860,6 @@ sangalettiaurora	3108	aurora	sangaletti	1991-12-18	Roma	\N	1118	base	matematica	
 paganiaurora	5279	aurora	pagani	1991-04-14	Milano	\N	1119	premium	lettere	0	0	0	\N	0	non definito
 ferrariaurora	671	aurora	ferrari	1995-01-08	SestriCapitale	\N	1120	base	chimica	0	0	0	\N	0	non definito
 pannellaaurora	467	aurora	pannella	1993-01-02	Milano	\N	1121	premium	giurisprudenza	0	0	0	\N	0	non definito
-tascaaurora	5246	aurora	tasca	1994-05-14	SestriCapitale	\N	1122	base	fisica	0	0	0	\N	0	non definito
 gardellaaurora	7288	aurora	gardella	1996-09-20	Bogliasco	\N	1123	premium	chimica	0	0	0	\N	0	non definito
 zolezziaurora	6582	aurora	zolezzi	1996-01-19	Roma	\N	1124	base	matematica	0	0	0	\N	0	non definito
 oliveriaurora	6964	aurora	oliveri	1990-12-13	Roma	\N	1125	premium	fisica	0	0	0	\N	0	non definito
@@ -2886,7 +2867,6 @@ malattoaurora	9725	aurora	malatto	1990-03-11	Milano	\N	1126	base	fisica	0	0	0	\N
 polveriniaurora	3488	aurora	polverini	1994-08-22	Roma	\N	1127	premium	biologia	0	0	0	\N	0	non definito
 pianforiniaurora	6647	aurora	pianforini	1995-01-10	Roma	\N	1128	base	fisica	0	0	0	\N	0	non definito
 stefaniniaurora	5893	aurora	stefanini	1990-06-15	Bogliasco	\N	1129	premium	matematica	0	0	0	\N	0	non definito
-tavellaaurora	3057	aurora	tavella	1995-06-17	Milano	\N	1130	base	lettere	0	0	0	\N	0	non definito
 conteaurora	795	aurora	conte	1995-04-10	Roma	\N	1131	premium	fisica	0	0	0	\N	0	non definito
 mattarellaaurora	2150	aurora	mattarella	1995-03-09	Milano	\N	1132	base	matematica	0	0	0	\N	0	non definito
 gentiloniaurora	2583	aurora	gentiloni	1995-06-09	Bogliasco	\N	1133	premium	biologia	0	0	0	\N	0	non definito
@@ -2900,7 +2880,6 @@ scipionigaetano	3330	gaetano	scipioni	1994-12-20	Roma	\N	1140	base	medicina	0	0	
 scottigaetano	7603	gaetano	scotti	1995-01-02	Milano	\N	1141	premium	fisica	0	0	0	\N	0	non definito
 simonigaetano	3946	gaetano	simoni	1991-09-06	SestriCapitale	\N	1142	base	biologia	0	0	0	\N	0	non definito
 basilegaetano	9789	gaetano	basile	1990-04-15	SestriCapitale	\N	1143	premium	matematica	0	0	0	\N	0	non definito
-saperdigaetano	7657	gaetano	saperdi	1991-11-20	Roma	\N	1144	base	fisica	0	0	0	\N	0	non definito
 sangalettigaetano	320	gaetano	sangaletti	1996-05-11	Milano	\N	1145	premium	medicina	0	0	0	\N	0	non definito
 paganigaetano	339	gaetano	pagani	1994-02-11	SestriCapitale	\N	1146	base	fisica	0	0	0	\N	0	non definito
 ferrarigaetano	7811	gaetano	ferrari	1991-06-02	Bogliasco	\N	1147	premium	biologia	0	0	0	\N	0	non definito
@@ -3271,8 +3250,12 @@ paganiandrea	6763	andrea	pagani	1992-08-13	Bogliasco	\N	1011	premium	chimica	0	0
 ferrariandrea	526	andrea	ferrari	1995-08-22	Milano	\N	1012	base	chimica	0	0	0	\N	6	non definito
 pannellaandrea	9955	andrea	pannella	1996-12-16	Roma	\N	1013	premium	giurisprudenza	0	0	0	\N	6	non definito
 tascaandrea	5277	andrea	tasca	1995-08-20	SestriCapitale	\N	1014	base	matematica	0	0	0	\N	6	non definito
+saperdigaetano	7657	gaetano	saperdi	1991-11-20	Roma	\N	1144	base	fisica	0	0	0	\N	2	non definito
 zazzeraandrea	8429	andrea	zazzera	1992-10-07	Bogliasco	\N	1001	premium	fisica	0	0	0	\N	6	non definito
 storaceandrea	5472	andrea	storace	1991-07-20	Roma	\N	1002	base	chimica	0	0	0	\N	6	non definito
+tascaaurora	5246	aurora	tasca	1994-05-14	SestriCapitale	\N	1122	base	fisica	0	0	0	\N	2	non definito
+tavellaaurora	3057	aurora	tavella	1995-06-17	Milano	\N	1130	base	lettere	0	0	0	\N	2	non definito
+contealberto	650	alberto	conte	1996-01-18	Bogliasco	\N	1104	base	biologia	0	0	0	\N	2	non definito
 \.
 
 
