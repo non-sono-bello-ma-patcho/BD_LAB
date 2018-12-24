@@ -758,6 +758,45 @@ COMMENT ON FUNCTION bdproject.int_simpl_veterans(eventoid bigint) IS 'Int_simpl_
 
 
 --
+-- Name: int_simpl_winner_tournament_phase(character varying, integer); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.int_simpl_winner_tournament_phase(_tour character varying, _phase integer) RETURNS TABLE(teams character varying)
+    LANGUAGE plpgsql
+    AS $$
+begin
+return query
+(
+    select team
+    from outcomes o1 join matches m1  on o1.match = m1.id
+    where m1.tournament=_tour
+    and m1.phase=_phase
+    and
+      (
+        (
+          (m1.category='calcio'or m1.category='basket')
+          and
+          (o1.score>(select o2.score from outcomes o2 where o2.match=m1.id and o2.team<>o1.team))
+
+        )
+        or
+        (
+          (m1.category='tennis'or m1.category='volley')
+          and
+          (o1.win>(select o3.score from outcomes o3 where o3.match=m1.id and o3.team<>o1.team))
+
+        )
+
+
+      )
+);
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.int_simpl_winner_tournament_phase(_tour character varying, _phase integer) OWNER TO strafo;
+
+--
 -- Name: is_match_closed(bigint); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
