@@ -3505,6 +3505,14 @@ ALTER TABLE ONLY bdproject.tournaments
 
 
 --
+-- Name: tournamentscandidatures tournamentscandidatures_pk; Type: CONSTRAINT; Schema: bdproject; Owner: postgres
+--
+
+ALTER TABLE ONLY bdproject.tournamentscandidatures
+    ADD CONSTRAINT tournamentscandidatures_pk PRIMARY KEY (team, tournament);
+
+
+--
 -- Name: users users_name_surname_regnumber_key; Type: CONSTRAINT; Schema: bdproject; Owner: postgres
 --
 
