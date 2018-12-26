@@ -562,23 +562,24 @@ ALTER FUNCTION bdproject.int_analysis_most_pop_cat() OWNER TO strafo;
 -- Name: int_analysis_most_popular_active_tournament(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.int_analysis_most_popular_active_tournament() RETURNS TABLE(team character varying, type character varying)
+CREATE FUNCTION bdproject.int_analysis_most_popular_active_tournament() RETURNS TABLE(team character varying)
     LANGUAGE plpgsql
     AS $$
 begin
   return query(
-    
-    select tourc.tournament ,count(*) as partecipanti
-    from tournamentscandidatures tourc join teamcandidatures teamc on tourc.team=teamc.team
-    group by tourc.tournament
-    having count(*)=(
-                    select count(*)
-                    from tournamentscandidatures tourc1 join teamcandidatures teamc1 on tourc1.team=teamc1.team
-                    where tourc1.tournament=tourc.tournament
-      )
-
-
-
+    select t1.team from (
+      select tourc.tournament as team,count(*) as npartecipanti
+      from tournamentscandidatures tourc join teamcandidatures teamc on tourc.team=teamc.team
+      group by tourc.tournament order by npartecipanti desc
+      limit 1
+    )as t1
+    union
+    select t2.team from (
+      select tournaments.name as team
+      from tournaments
+      order by tournaments.name desc
+      limit 1
+    )as t2
   );
 end;
 $$;
