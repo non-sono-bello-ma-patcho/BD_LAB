@@ -480,6 +480,29 @@ $$;
 ALTER FUNCTION bdproject.incrementapartitegiocateutente(_tipo character varying, _username character varying) OWNER TO strafo;
 
 --
+-- Name: int_analysis_best_behaviour_cs(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.int_analysis_best_behaviour_cs() RETURNS TABLE(category bdproject.sport, studycourse character varying, avgscore double precision)
+    LANGUAGE plpgsql
+    AS $$
+begin
+return query(
+
+  select m.category ,u.studycourse ,avg(cast(e.score as float)) as avg_score
+  from matches m join evaluations e on m.id = e.match
+  join users u on e.evaluated = u.username
+  group by m.category,u.studycourse
+  order by avg_score desc
+  limit 1
+);
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.int_analysis_best_behaviour_cs() OWNER TO strafo;
+
+--
 -- Name: int_analysis_best_mactive_course(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
@@ -2549,6 +2572,21 @@ basket	molto bello	2	10	\N
 COPY bdproject.evaluations (evaluated, evaluator, evaluatedon, match, score, comment) FROM stdin;
 straforiniandrea	tascaandrea	2018-12-03	33	5	\N
 straforiniandrea	conteandrea	2018-12-03	33	5	\N
+malattoandrea	armaninoaurora	2019-01-05	409177	1	non si lava
+campisigaetano	armaninoaurora	2019-01-05	409177	5	bono
+contegemma	armaninoaurora	2019-01-05	409177	7	nzomma
+storacegaetano	armaninoaurora	2019-01-05	409177	3	falloso
+storacegaetano	campisigaetano	2019-01-05	409177	4	dorme in panchina
+tavellaandrea	campisigaetano	2019-01-05	409177	8	bravino ino
+conteaurora	campisigaetano	2019-01-05	409177	1	mezzora per capire che non si trattava di una parttia di squash
+polveriniandrea	campisigaetano	2019-01-05	409177	4	sempre in ritardo
+malattomonica	malattoandrea	2019-01-05	409177	10	mi ha rotto un dente
+malattoandrea	malattomonica	2019-01-05	409177	10	gli ho rotto un dente
+campisigaetano	zazzeraandrea	2019-01-05	409177	5	non capiva quale era la sua squadra
+campisigaetano	storacegaetano	2019-01-05	409178	10	si chiama come me
+storacegaetano	campisigaetano	2019-01-05	409178	1	si chiama come me
+contegemma	campisigaetano	2019-01-05	409178	1	mi ha fatto lo sgmabetto
+armaninogaetano	campisigaetano	2019-01-05	409178	7	non ce ne sono tredici in una dozzina
 \.
 
 
@@ -2808,6 +2846,7 @@ Team1	polveriniandrea	malattoandrea	undefined
 Team1	stefaniniandrea	malattoandrea	undefined
 Team1	tavellaandrea	malattoandrea	undefined
 Team1	scipioniandrea	malattoandrea	undefined
+squadracalcio1	pianforinialberto	pianforinialberto	player
 Non sono bello ma patcho	armaninogaetano	straforiniandrea	undefined
 Non sono bello ma patcho	campisigaetano	straforiniandrea	undefined
 squadra1	straforiniandrea	\N	role1
@@ -2817,8 +2856,35 @@ squadra1	basileandrea	\N	role1
 squadra1	tascaandrea	\N	role1
 squadra1	gardellaandrea	\N	role1
 squadra2	scipioniandrea	\N	role1
+squadracalcio1	gardellaandrea	pianforinialberto	player
+squadracalcio1	pianforiniandrea	pianforinialberto	player
+squadracalcio1	mattarellaandrea	pianforinialberto	player
 squadra2	pannellaandrea	\N	role1
 squadra2	ferrariandrea	\N	role1
+squadracalcio1	gentiloniandrea	pianforinialberto	player
+squadracalcio1	napolitanoandrea	pianforinialberto	player
+squadracalcio1	straforiniadriana	pianforinialberto	player
+squadracalcio2	tavellaalberto	tavellaalberto	player
+squadracalcio2	zazzeraadriana	tavellaalberto	player
+squadracalcio2	storaceadriana	tavellaalberto	player
+squadracalcio2	armaninoadriana	tavellaalberto	player
+squadracalcio2	campisiadriana	tavellaalberto	player
+squadracalcio2	scipioniadriana	tavellaalberto	player
+squadracalcio2	scottiadriana	tavellaalberto	player
+squadracalcio3	mattarellaalberto	mattarellaalberto	player
+squadracalcio3	simoniadriana	mattarellaalberto	player
+squadracalcio3	basileadriana	mattarellaalberto	player
+squadracalcio3	saperdiadriana	mattarellaalberto	player
+squadracalcio3	sangalettiadriana	mattarellaalberto	player
+squadracalcio3	paganiadriana	mattarellaalberto	player
+squadracalcio3	ferrariadriana	mattarellaalberto	player
+squadracalcio4	napolitanoalberto	napolitanoalberto	player
+squadracalcio4	pannellaadriana	napolitanoalberto	player
+squadracalcio4	tascaadriana	napolitanoalberto	player
+squadracalcio4	gardellaadriana	napolitanoalberto	player
+squadracalcio4	zolezziadriana	napolitanoalberto	player
+squadracalcio4	oliveriadriana	napolitanoalberto	player
+squadracalcio4	malattoadriana	napolitanoalberto	player
 squadra2	scottiandrea	\N	role1
 squadra2	storaceandrea	\N	role1
 squadra2	paganiandrea	\N	role1
@@ -2856,6 +2922,10 @@ squadra2	rosso	tennis	team2desc	team2notes	armaninoandrea	open
 squadra1	blu	tennis	team1desc	team1notes	zazzeraandrea	open
 squadratorneo3	\N	basket	torneoprova	ciaozio3	tascaaurora	open
 squadratorneo4	\N	basket	torneoprova	ciaozio4	contealberto	open
+squadracalcio1	\N	calcio	una bella squadra	ciao	pianforinialberto	open
+squadracalcio2	\N	calcio	una bella squadra	ciao	tavellaalberto	open
+squadracalcio3	\N	calcio	una bella squadra	ciao	mattarellaalberto	open
+squadracalcio4	\N	calcio	una bella squadra	ciao	napolitanoalberto	open
 \.
 
 
