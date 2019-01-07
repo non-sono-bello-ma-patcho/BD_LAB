@@ -480,7 +480,7 @@ $$;
 ALTER FUNCTION bdproject.incrementapartitegiocateutente(_tipo character varying, _username character varying) OWNER TO strafo;
 
 --
--- Name: int_analysis_best_behaviour_cs(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+-- Name: int_analysis_best_behaviour_cs(); Type: FUNCTION; Schema: bdproject; Owner: andreo
 --
 
 CREATE FUNCTION bdproject.int_analysis_best_behaviour_cs() RETURNS TABLE(category bdproject.sport, studycourse character varying, avgscore double precision)
@@ -488,19 +488,22 @@ CREATE FUNCTION bdproject.int_analysis_best_behaviour_cs() RETURNS TABLE(categor
     AS $$
 begin
 return query(
-
-  select m.category ,u.studycourse ,avg(cast(e.score as float)) as avg_score
-  from matches m join evaluations e on m.id = e.match
-  join users u on e.evaluated = u.username
-  group by m.category,u.studycourse
-  order by avg_score desc
-  limit 1
+  select foo.category, foo.studycourse, max(foo.avg_score)
+  from (
+         select m.category category, u.studycourse studycourse, avg(cast(e.score as float)) avg_score
+         from matches m
+                join evaluations e on m.id = e.match
+                join users u on e.evaluated = u.username
+         group by m.category,u.studycourse
+         order by avg_score desc
+       ) foo
+  group by foo.category
 );
 end;
 $$;
 
 
-ALTER FUNCTION bdproject.int_analysis_best_behaviour_cs() OWNER TO strafo;
+ALTER FUNCTION bdproject.int_analysis_best_behaviour_cs() OWNER TO andreo;
 
 --
 -- Name: int_analysis_best_mactive_course(); Type: FUNCTION; Schema: bdproject; Owner: strafo
@@ -1944,7 +1947,7 @@ CREATE TABLE bdproject.teams (
 ALTER TABLE bdproject.teams OWNER TO postgres;
 
 --
--- Name: compositions; Type: VIEW; Schema: bdproject; Owner: andreo
+-- Name: compositions; Type: VIEW; Schema: bdproject; Owner: postgres
 --
 
 CREATE VIEW bdproject.compositions AS
@@ -1956,7 +1959,7 @@ CREATE VIEW bdproject.compositions AS
   WHERE (teamcandidatures.admin IS NOT NULL);
 
 
-ALTER TABLE bdproject.compositions OWNER TO andreo;
+ALTER TABLE bdproject.compositions OWNER TO postgres;
 
 --
 -- Name: evaluations; Type: TABLE; Schema: bdproject; Owner: postgres
@@ -2289,7 +2292,7 @@ CREATE TABLE bdproject.users (
 ALTER TABLE bdproject.users OWNER TO postgres;
 
 --
--- Name: program; Type: VIEW; Schema: bdproject; Owner: andreo
+-- Name: program; Type: VIEW; Schema: bdproject; Owner: postgres
 --
 
 CREATE VIEW bdproject.program AS
@@ -2311,7 +2314,7 @@ CREATE VIEW bdproject.program AS
   GROUP BY matches.building, (date_part('month'::text, matches.organizedon)), matches.category;
 
 
-ALTER TABLE bdproject.program OWNER TO andreo;
+ALTER TABLE bdproject.program OWNER TO postgres;
 
 --
 -- Name: refereecandidatures; Type: TABLE; Schema: bdproject; Owner: postgres
@@ -2360,7 +2363,7 @@ CREATE TABLE bdproject.studycourses (
 ALTER TABLE bdproject.studycourses OWNER TO postgres;
 
 --
--- Name: tournamentprogram; Type: TABLE; Schema: bdproject; Owner: andreo
+-- Name: tournamentprogram; Type: TABLE; Schema: bdproject; Owner: postgres
 --
 
 CREATE TABLE bdproject.tournamentprogram (
@@ -2377,7 +2380,7 @@ CREATE TABLE bdproject.tournamentprogram (
 ALTER TABLE ONLY bdproject.tournamentprogram REPLICA IDENTITY NOTHING;
 
 
-ALTER TABLE bdproject.tournamentprogram OWNER TO andreo;
+ALTER TABLE bdproject.tournamentprogram OWNER TO postgres;
 
 --
 -- Name: tournaments; Type: TABLE; Schema: bdproject; Owner: postgres
@@ -3619,7 +3622,7 @@ ALTER TABLE ONLY bdproject.users
 
 
 --
--- Name: tournamentprogram _RETURN; Type: RULE; Schema: bdproject; Owner: andreo
+-- Name: tournamentprogram _RETURN; Type: RULE; Schema: bdproject; Owner: postgres
 --
 
 CREATE RULE "_RETURN" AS
@@ -3649,7 +3652,9 @@ CREATE RULE "_RETURN" AS
                     WHEN (o_1.score IS NULL) THEN o_1.win
                     ELSE o_1.score
                 END = foo.wins))))) bar ON ((bar.match = o.match)))
-  GROUP BY m.id, bar.winner;
+  WHERE (m.tournament IS NOT NULL)
+  GROUP BY m.id, bar.winner
+  ORDER BY m.tournament, m.phase;
 
 
 --
