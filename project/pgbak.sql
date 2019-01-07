@@ -2300,8 +2300,8 @@ CREATE VIEW bdproject.program AS
     date_part('month'::text, matches.organizedon) AS cmonth,
     matches.category,
     count(DISTINCT matches.tournament) AS tournaments,
-    count(matches.id) AS matches,
-    count(c.player) AS participants,
+    count(DISTINCT matches.id) AS matches,
+    count(DISTINCT c.player) AS participants,
     count(DISTINCT u.studycourse) AS cs,
     date_part('hours'::text, sum((outcomes.duration)::interval)) AS totalduration,
     (date_part('hours'::text, sum((outcomes.duration)::interval)) / avg((date_part('hour'::text, (buildings.closure - buildings.opening)) * (bdproject.aux_workingdays(matches.organizedon))::double precision))) AS usagepercentage
