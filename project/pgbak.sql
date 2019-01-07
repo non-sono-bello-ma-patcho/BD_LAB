@@ -488,16 +488,13 @@ CREATE FUNCTION bdproject.int_analysis_best_behaviour_cs() RETURNS TABLE(categor
     AS $$
 begin
 return query(
-  select foo.category, foo.studycourse, max(foo.avg_score)
-  from (
-         select m.category category, u.studycourse studycourse, avg(cast(e.score as float)) avg_score
-         from matches m
-                join evaluations e on m.id = e.match
-                join users u on e.evaluated = u.username
-         group by m.category,u.studycourse
-         order by avg_score desc
-       ) foo
-  group by foo.category
+  select csy.category, csy.studycourse, csy."average score"::double precision
+  from cs_yield csy
+  where "average score" in (
+    select max("average score")
+    from cs_yield cy
+    group by cy.category
+    )
 );
 end;
 $$;
@@ -562,6 +559,41 @@ $$;
 
 
 ALTER FUNCTION bdproject.int_analysis_best_mactive_course() OWNER TO strafo;
+
+--
+-- Name: int_analysis_course_category_bestplayer(); Type: FUNCTION; Schema: bdproject; Owner: strafo
+--
+
+CREATE FUNCTION bdproject.int_analysis_course_category_bestplayer() RETURNS TABLE(category character varying, study_course character varying, player character varying, win_n integer)
+    LANGUAGE plpgsql
+    AS $$
+begin
+return query(
+select t1.category,u1.studycourse,u1.username
+from tournaments  t1
+left join teamcandidatures   on t1.winner = teamcandidatures.team
+left join users u1  on teamcandidatures.applicant = u1.username
+group by t1.category,u1.studycourse,u1.username
+having count(*)=(
+
+  select max(T.n_win1)
+  from (
+         select t.category,u.studycourse,u.username,count(*) as n_win1
+         from tournaments t
+                left join teamcandidatures tc on t.winner = tc.team
+                left join users u on tc.applicant = u.username
+         group by t.category,u.studycourse,u.username
+       ) as T
+  where T.category=t1.category and T.studycourse=u1.studycourse
+  group by T.category,T.studycourse
+  )
+order by t1.category,u1.studycourse
+);
+end;
+$$;
+
+
+ALTER FUNCTION bdproject.int_analysis_course_category_bestplayer() OWNER TO strafo;
 
 --
 -- Name: int_analysis_most_pop_cat(); Type: FUNCTION; Schema: bdproject; Owner: strafo
@@ -1980,6 +2012,67 @@ CREATE TABLE bdproject.evaluations (
 ALTER TABLE bdproject.evaluations OWNER TO postgres;
 
 --
+-- Name: matches; Type: TABLE; Schema: bdproject; Owner: postgres
+--
+
+CREATE TABLE bdproject.matches (
+    id bigint NOT NULL,
+    building character varying(64) NOT NULL,
+    organizedon date NOT NULL,
+    insertedon date DEFAULT now() NOT NULL,
+    tournament character varying(64),
+    mstate bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
+    admin character varying(64) NOT NULL,
+    category bdproject.sport NOT NULL,
+    phase integer
+);
+
+
+ALTER TABLE bdproject.matches OWNER TO postgres;
+
+--
+-- Name: users; Type: TABLE; Schema: bdproject; Owner: postgres
+--
+
+CREATE TABLE bdproject.users (
+    username character varying(64) NOT NULL,
+    password character varying(64),
+    name character varying(64) NOT NULL,
+    surname character varying(64) NOT NULL,
+    birthdate date NOT NULL,
+    birthplace character varying(64) NOT NULL,
+    photo bigint,
+    regnumber integer NOT NULL,
+    uprivilege bdproject.privilege DEFAULT 'base'::bdproject.privilege NOT NULL,
+    studycourse character varying(64) NOT NULL,
+    tennismatch numeric DEFAULT 0 NOT NULL,
+    volleymatch numeric DEFAULT 0 NOT NULL,
+    soccermatch numeric DEFAULT 0 NOT NULL,
+    phonenumber character varying(10),
+    basketmatch numeric DEFAULT 0 NOT NULL,
+    gender bdproject.gender DEFAULT 'non definito'::bdproject.gender NOT NULL
+);
+
+
+ALTER TABLE bdproject.users OWNER TO postgres;
+
+--
+-- Name: cs_yield; Type: VIEW; Schema: bdproject; Owner: andreo
+--
+
+CREATE VIEW bdproject.cs_yield AS
+ SELECT m.category,
+    u.studycourse,
+    avg(e.score) AS "average score"
+   FROM ((bdproject.evaluations e
+     LEFT JOIN bdproject.matches m ON ((e.match = m.id)))
+     LEFT JOIN bdproject.users u ON (((e.evaluated)::text = (u.username)::text)))
+  GROUP BY m.category, u.studycourse;
+
+
+ALTER TABLE bdproject.cs_yield OWNER TO andreo;
+
+--
 -- Name: evaluations_match_seq; Type: SEQUENCE; Schema: bdproject; Owner: postgres
 --
 
@@ -2071,25 +2164,6 @@ ALTER TABLE bdproject.matchcandidatures_match_seq OWNER TO postgres;
 
 ALTER SEQUENCE bdproject.matchcandidatures_match_seq OWNED BY bdproject.matchcandidatures.match;
 
-
---
--- Name: matches; Type: TABLE; Schema: bdproject; Owner: postgres
---
-
-CREATE TABLE bdproject.matches (
-    id bigint NOT NULL,
-    building character varying(64) NOT NULL,
-    organizedon date NOT NULL,
-    insertedon date DEFAULT now() NOT NULL,
-    tournament character varying(64),
-    mstate bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
-    admin character varying(64) NOT NULL,
-    category bdproject.sport NOT NULL,
-    phase integer
-);
-
-
-ALTER TABLE bdproject.matches OWNER TO postgres;
 
 --
 -- Name: matches_id_seq; Type: SEQUENCE; Schema: bdproject; Owner: postgres
@@ -2264,32 +2338,6 @@ ALTER TABLE bdproject.posts_photo_seq OWNER TO postgres;
 
 ALTER SEQUENCE bdproject.posts_photo_seq OWNED BY bdproject.posts.photo;
 
-
---
--- Name: users; Type: TABLE; Schema: bdproject; Owner: postgres
---
-
-CREATE TABLE bdproject.users (
-    username character varying(64) NOT NULL,
-    password character varying(64),
-    name character varying(64) NOT NULL,
-    surname character varying(64) NOT NULL,
-    birthdate date NOT NULL,
-    birthplace character varying(64) NOT NULL,
-    photo bigint,
-    regnumber integer NOT NULL,
-    uprivilege bdproject.privilege DEFAULT 'base'::bdproject.privilege NOT NULL,
-    studycourse character varying(64) NOT NULL,
-    tennismatch numeric DEFAULT 0 NOT NULL,
-    volleymatch numeric DEFAULT 0 NOT NULL,
-    soccermatch numeric DEFAULT 0 NOT NULL,
-    phonenumber character varying(10),
-    basketmatch numeric DEFAULT 0 NOT NULL,
-    gender bdproject.gender DEFAULT 'non definito'::bdproject.gender NOT NULL
-);
-
-
-ALTER TABLE bdproject.users OWNER TO postgres;
 
 --
 -- Name: program; Type: VIEW; Schema: bdproject; Owner: postgres
@@ -2590,6 +2638,16 @@ campisigaetano	storacegaetano	2019-01-05	409178	10	si chiama come me
 storacegaetano	campisigaetano	2019-01-05	409178	1	si chiama come me
 contegemma	campisigaetano	2019-01-05	409178	1	mi ha fatto lo sgmabetto
 armaninogaetano	campisigaetano	2019-01-05	409178	7	non ce ne sono tredici in una dozzina
+straforiniadriana	simoniadriana	2019-01-07	409178	7	banana ammock
+straforiniadriana	simoniadriana	2019-01-07	409181	7	banana ammock
+straforiniadriana	sangalettiadriana	2019-01-07	409181	7	banana ammock
+straforiniadriana	gentiloniandrea	2019-01-07	409181	7	banana ammock
+straforiniadriana	ferrariadriana	2019-01-07	409181	7	banana ammock
+straforiniadriana	basileadriana	2019-01-07	409181	7	banana ammock
+pianforinialberto	basileadriana	2019-01-07	409181	2	banana ammock
+pianforinialberto	straforiniadriana	2019-01-07	409181	2	banana ammock
+pianforinialberto	simoniadriana	2019-01-07	409181	2	banana ammock
+pianforinialberto	pianforiniandrea	2019-01-07	409181	2	banana ammock
 \.
 
 
