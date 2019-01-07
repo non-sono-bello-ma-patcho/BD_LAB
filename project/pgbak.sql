@@ -724,6 +724,29 @@ $$;
 ALTER FUNCTION bdproject.int_simpl_always_acc_ref(_category bdproject.sport) OWNER TO strafo;
 
 --
+-- Name: int_simpl_free_facilities(interval, interval); Type: FUNCTION; Schema: bdproject; Owner: andreo
+--
+
+CREATE FUNCTION bdproject.int_simpl_free_facilities(_begin interval, _end interval) RETURNS TABLE(name character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  return query (
+    select building
+    from program p
+    left outer join buildings b on p.building = b.name
+    where date_part('hour', opening) <= date_part('hours',_begin) and date_part('hour', closure)>= date_part('hour', _end) and usagePercentage < (
+      select avg(usagePercentage)
+      from program
+      )
+  );
+END;
+$$;
+
+
+ALTER FUNCTION bdproject.int_simpl_free_facilities(_begin interval, _end interval) OWNER TO andreo;
+
+--
 -- Name: int_simpl_multiple_referee(bdproject.sport); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
