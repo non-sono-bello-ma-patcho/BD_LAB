@@ -2210,6 +2210,65 @@ ALTER SEQUENCE bdproject.matches_id_seq OWNED BY bdproject.matches.id;
 
 
 --
+-- Name: tournaments; Type: TABLE; Schema: bdproject; Owner: postgres
+--
+
+CREATE TABLE bdproject.tournaments (
+    name character varying(64) NOT NULL,
+    ttype bdproject.girone DEFAULT 'italiana'::bdproject.girone NOT NULL,
+    manager character varying(64) NOT NULL,
+    teamsnumber integer DEFAULT 2 NOT NULL,
+    state bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
+    category bdproject.sport,
+    winner character varying(64) DEFAULT NULL::character varying,
+    building character varying(64) NOT NULL,
+    CONSTRAINT manager_premium CHECK (public.ispremium(manager))
+);
+
+
+ALTER TABLE bdproject.tournaments OWNER TO postgres;
+
+--
+-- Name: medal; Type: VIEW; Schema: bdproject; Owner: andreo
+--
+
+CREATE VIEW bdproject.medal AS
+ SELECT best_players.category,
+    best_teams.winner,
+    best_players.username,
+    iabbc.studycourse
+   FROM ((( SELECT wins_per_team.category,
+            wins_per_team.winner,
+            max(wins_per_team.wins) AS max
+           FROM ( SELECT tournaments.category,
+                    tournaments.winner,
+                    count(*) AS wins
+                   FROM bdproject.tournaments
+                  GROUP BY tournaments.winner, tournaments.category) wins_per_team
+          GROUP BY wins_per_team.category, wins_per_team.winner) best_teams
+     JOIN ( SELECT t1.category,
+            u1.username
+           FROM ((bdproject.tournaments t1
+             LEFT JOIN bdproject.teamcandidatures ON (((t1.winner)::text = (teamcandidatures.team)::text)))
+             LEFT JOIN bdproject.users u1 ON (((teamcandidatures.applicant)::text = (u1.username)::text)))
+          GROUP BY t1.category, u1.username
+         HAVING (count(*) = ( SELECT max(t.n_win1) AS max
+                   FROM ( SELECT t_1.category,
+                            u.username,
+                            count(*) AS n_win1
+                           FROM ((bdproject.tournaments t_1
+                             LEFT JOIN bdproject.teamcandidatures tc ON (((t_1.winner)::text = (tc.team)::text)))
+                             LEFT JOIN bdproject.users u ON (((tc.applicant)::text = (u.username)::text)))
+                          GROUP BY t_1.category, u.username) t
+                  WHERE (t.category = t1.category)
+                  GROUP BY t.category))
+          ORDER BY t1.category) best_players ON ((best_teams.category = best_players.category)))
+     JOIN bdproject.int_analysis_best_behaviour_cs() iabbc(category, studycourse, avgscore) ON ((best_players.category = iabbc.category)));
+
+
+ALTER TABLE bdproject.medal OWNER TO andreo;
+
+--
 -- Name: outcomes; Type: TABLE; Schema: bdproject; Owner: postgres
 --
 
@@ -2452,25 +2511,6 @@ ALTER TABLE ONLY bdproject.tournamentprogram REPLICA IDENTITY NOTHING;
 
 
 ALTER TABLE bdproject.tournamentprogram OWNER TO postgres;
-
---
--- Name: tournaments; Type: TABLE; Schema: bdproject; Owner: postgres
---
-
-CREATE TABLE bdproject.tournaments (
-    name character varying(64) NOT NULL,
-    ttype bdproject.girone DEFAULT 'italiana'::bdproject.girone NOT NULL,
-    manager character varying(64) NOT NULL,
-    teamsnumber integer DEFAULT 2 NOT NULL,
-    state bdproject.state DEFAULT 'open'::bdproject.state NOT NULL,
-    category bdproject.sport,
-    winner character varying(64) DEFAULT NULL::character varying,
-    building character varying(64) NOT NULL,
-    CONSTRAINT manager_premium CHECK (public.ispremium(manager))
-);
-
-
-ALTER TABLE bdproject.tournaments OWNER TO postgres;
 
 --
 -- Name: tournamentscandidatures; Type: TABLE; Schema: bdproject; Owner: postgres
