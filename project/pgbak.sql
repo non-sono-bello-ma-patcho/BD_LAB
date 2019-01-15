@@ -564,12 +564,12 @@ ALTER FUNCTION bdproject.int_analysis_best_mactive_course() OWNER TO strafo;
 -- Name: int_analysis_course_category_bestplayer(); Type: FUNCTION; Schema: bdproject; Owner: strafo
 --
 
-CREATE FUNCTION bdproject.int_analysis_course_category_bestplayer() RETURNS TABLE(category character varying, study_course character varying, player character varying, win_n integer)
+CREATE FUNCTION bdproject.int_analysis_course_category_bestplayer() RETURNS TABLE(category bdproject.sport, study_course character varying, player character varying, win_n bigint)
     LANGUAGE plpgsql
     AS $$
 begin
 return query(
-select t1.category,u1.studycourse,u1.username
+select t1.category,u1.studycourse,u1.username,count(*)
 from tournaments  t1
 left join teamcandidatures   on t1.winner = teamcandidatures.team
 left join users u1  on teamcandidatures.applicant = u1.username
